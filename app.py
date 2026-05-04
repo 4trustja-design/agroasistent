@@ -4,7 +4,6 @@ from google.genai import types
 import folium
 from streamlit_folium import st_folium
 import requests
-
 # --- 1. KONFIGURACIJA ---
 FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSccBzwQSmytB6TSzYLmcj429FiWMVGm7WUTUi5GqZZUHV6C_g/formResponse"
 
