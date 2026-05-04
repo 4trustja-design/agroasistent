@@ -17,14 +17,23 @@ tab1, tab2, tab3 = st.tabs(["🍎 Voćarstvo", "🥦 Povrtarstvo", "📍 Lokacij
 
 def generisi_savet(prompt):
     try:
-        # Povezivanje sa Google AI
         genai.configure(api_key=api_key.strip())
-        # Korišćenje najstabilnijeg modela današnjice
-        model = genai.GenerativeModel('gemini-1.0-pro')
-        odgovor = model.generate_content(prompt)
-        return odgovor.text
+        # Menjamo način pozivanja i dodajemo konfiguraciju
+        model = genai.GenerativeModel(
+            model_name="gemini-1.0-pro",
+            generation_config={
+                "temperature": 0.7,
+                "top_p": 1,
+                "top_k": 1,
+                "max_output_tokens": 2048,
+            }
+        )
+        response = model.generate_content(prompt)
+        return response.text
     except Exception as e:
-        return f"Ups! Nešto nije u redu: {str(e)}"
+        # Ako ni ovo ne proradi, ispisujemo precizniju grešku
+        return f"Sistemska blokada: {str(e)}. Pokušajte da kreirate potpuno NOV ključ na AI Studio-u."
+
 
 with tab1:
     st.header("Saveti za voćare (0-5 god)")
