@@ -9,14 +9,16 @@ import requests
 # Link tvoje forme za upis u tabelu
 FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSccBzwQSmytB6TSzYLmcj429FiWMVGm7WUTUi5GqZZUHV6C_g/formResponse"
 
-# Inicijalizacija AI Klijenta
-try:
-    if "GEMINI_API_KEY" in st.secrets:
-        client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
-    else:
-        st.error("Nedostaje GEMINI_API_KEY u Streamlit Secrets podešavanjima!")
-except Exception as e:
-    st.error(f"Greška pri povezivanju sa AI servisom: {e}")
+# --- 1. KONFIGURACIJA ---
+FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSccBzwQSmytB6TSzYLmcj429FiWMVGm7WUTUi5GqZZUHV6C_g/formResponse"
+
+# Inicijalizacija AI Klijenta - MORA BITI OVAKO:
+if "GEMINI_API_KEY" in st.secrets:
+    # Definišemo klijenta direktno da bi bio dostupan celoj aplikaciji
+    client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
+else:
+    st.error("Nedostaje GEMINI_API_KEY u Streamlit Secrets podešavanjima!")
+    st.stop() # Zaustavlja aplikaciju ako nema ključa, da ne bi izbacivala 'name client is not defined'
 
 # --- 2. POMOĆNE FUNKCIJE ---
 
