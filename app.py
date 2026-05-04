@@ -25,35 +25,32 @@ def pitaj_ai(pitanje):
     if not api_key_input:
         return "Greska: Niste uneli API ključ u levom meniju!"
     
-    # Čišćenje ključa od razmaka i kosa crta
     cist_kljuc = api_key_input.strip()
     
-    # Najstabilnija adresa za v1 verziju API-ja
-    url = f"https://googleapis.com{cist_kljuc}"
+    # PAŽNJA: Ovde smo dodali upitnik (?) koji razdvaja adresu od ključa
+    url = "https://googleapis.com"
+    parametri = {'key': cist_kljuc}
     
     headers = {'Content-Type': 'application/json'}
-    data = {
+    podaci = {
         "contents": [{
             "parts": [{"text": pitanje}]
         }]
     }
     
     try:
-        response = requests.post(url, headers=headers, json=data)
+        # Ovde šaljemo ključ odvojeno od adrese (params=parametri)
+        response = requests.post(url, headers=headers, params=parametri, json=podaci)
         
-        # Ako je status kod 200, sve je u redu
         if response.status_code == 200:
             odgovor_json = response.json()
-            if 'candidates' in odgovor_json and len(odgovor_json['candidates']) > 0:
-                return odgovor_json['candidates'][0]['content']['parts'][0]['text']
-            else:
-                return "AI nije vratio odgovor. Proverite da li je vaš API ključ ispravan."
+            return odgovor_json['candidates'][0]['content']['parts'][0]['text']
         else:
-            # Ispisujemo tačnu grešku ako nije 200
-            return f"Greška sa Google servera (Kod {response.status_code}): {response.text}"
+            return f"Greška (Kod {response.status_code}): {response.text}"
             
     except Exception as e:
-        return f"Došlo je do greške u povezivanju: {str(e)}"
+        return f"Greška u konekciji: {str(e)}"
+
 
 # --- TAB 1: VOĆARSTVO ---
 with tab1:
