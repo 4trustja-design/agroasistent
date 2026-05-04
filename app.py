@@ -12,10 +12,11 @@ st.title("🌾 Pametni Poljoprivredni Savetnik")
 tab1, tab2, tab3 = st.tabs(["🍎 Voćarstvo", "🥦 Povrtarstvo", "📍 Lokacija"])
 
 def pitaj_ai(pitanje):
-    # Pažljivo razdvajamo bazu i ključ
-    baza_url = "https://googleapis.com"
-    kompletna_adresa = f"{baza_url}?key={api_key}"
+    # Čista adresa bez ključa u linku
+    url = "https://googleapis.com"
     
+    # Ključ šaljemo kao parametar, ali na čistiji način
+    params = {'key': api_key}
     headers = {'Content-Type': 'application/json'}
     data = {
         "contents": [{
@@ -24,17 +25,23 @@ def pitaj_ai(pitanje):
     }
     
     try:
-        response = requests.post(kompletna_adresa, headers=headers, json=data)
+        response = requests.post(url, headers=headers, params=params, json=data)
+        
+        # Ako je Google vratio grešku (npr. pogrešan ključ), ispisaće je ovde
+        if response.status_code != 200:
+            return f"Greška sa Google servera (Kod {response.status_code}): {response.text}"
+            
         odgovor_json = response.json()
         
-        # Provera da li nam je Google vratio tekst
+        # Izvlačenje teksta
         if 'candidates' in odgovor_json:
             return odgovor_json['candidates'][0]['content']['parts'][0]['text']
         else:
-            return f"AI nije poslao odgovor. Proveri ključ. Poruka: {odgovor_json}"
+            return "AI je vratio prazan odgovor. Proveri da li je API ključ ispravan."
             
     except Exception as e:
-        return f"Greška u konekciji: {str(e)}"
+        return f"Došlo je do greške: {str(e)}"
+
 
 
 with tab1:
