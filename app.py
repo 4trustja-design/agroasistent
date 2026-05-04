@@ -7,23 +7,25 @@ from streamlit_folium import st_folium
 try:
     API_KEY = st.secrets["GEMINI_API_KEY"]
     genai.configure(api_key=API_KEY)
-    # KORISTIMO NOVIJI MODEL KOJI JE DOSTUPAN
-    model = genai.GenerativeModel('gemini-1.5-flash') 
+    
+    # Pokušavamo sa "gemini-1.5-flash-latest" što je najsigurnija putanja
+    model = genai.GenerativeModel('models/gemini-1.5-flash') 
 except Exception as e:
-    st.error("Greška: Proveri 'Secrets' na Streamlit-u ili API ključ.")
+    st.error(f"Greška pri konfiguraciji: {e}")
 
-# 2. Funkcija koja zove AI (dodata bolja kontrola grešaka)
+# 2. Funkcija koja zove AI
 def dobij_ai_savet(kategorija, vrsta, detalj):
-    prompt = f"""
-    Ti si stručni agronom iz Srbije. Korisnik gaji {vrsta} ({kategorija}) u fazi/uslovima: {detalj}.
-    Daj mu konkretan plan radova, zaštite i prihrane za podneblje Srbije.
-    Odgovori na srpskom, koristi emotikone i budi veoma precizan.
-    """
+    prompt = f"Ti si agronom iz Srbije. Daj plan za {kategorija}, vrsta {vrsta}, faza {detalj}. Odgovori na srpskom."
     try:
+        # Dodajemo generisanje sadržaja
         response = model.generate_content(prompt)
-        return response.text
+        if response.text:
+            return response.text
+        else:
+            return "AI nije vratio odgovor. Pokušajte ponovo."
     except Exception as e:
-        return f"Došlo je do greške: {str(e)}"
+        # Ako i dalje prijavljuje 404, ispisujemo tačnu grešku radi dijagnostike
+        return f"Greška u modelu: {str(e)}"
 
 # 3. Izgled aplikacije
 st.set_page_config(page_title="AI AgroAsistent Srbija", page_icon="🚜")
