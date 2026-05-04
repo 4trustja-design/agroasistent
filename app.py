@@ -9,23 +9,31 @@ kljuc = st.sidebar.text_input("UNESI NOVI API KLJUČ:", type="password")
 st.title("🌾 AgroAsistent Srbija")
 
 def pozovi_ai(pitanje):
-    # Proverena putanja sa v1beta verzijom i stabilnim modelom
-    adresa = "https://googleapis.com"
+    # Proverena i najnovija putanja koju Google preporučuje za 2024. godinu
+    cist_kljuc = kljuc.strip()
+    adresa = f"https://googleapis.com{cist_kljuc}"
     
-    parametri = {'key': kljuc.strip()}
     zaglavlje = {'Content-Type': 'application/json'}
-    podaci = {"contents": [{"parts": [{"text": pitanje}]}]}
+    podaci = {
+        "contents": [{
+            "parts": [{"text": pitanje}]
+        }]
+    }
     
     try:
-        # Koristimo timeout da aplikacija ne bi "visila" ako Google ne odgovara
-        r = requests.post(adresa, headers=zaglavlje, params=parametri, json=podaci, timeout=10)
+        response = requests.post(adresa, headers=zaglavlje, json=podaci)
+        odgovor_json = response.json()
         
-        if r.status_code == 200:
-            return r.json()['candidates']['content']['parts']['text']
+        if response.status_code == 200:
+            # Ako je sve u redu, uzmi tekst
+            return odgovor_json['candidates'][0]['content']['parts'][0]['text']
         else:
-            return f"Problem na Google serveru (Status: {r.status_code}). Proveri da li je ključ ispravan."
+            # Ako opet prijavi 404, ispisaće nam tačno ŠTA Google vidi
+            return f"Google javlja problem (Kod {response.status_code}): {odgovor_json.get('error', {}).get('message', 'Nepoznata greška')}"
+            
     except Exception as e:
         return f"Greška u konekciji: {str(e)}"
+
 
 # Glavni deo aplikacije
 tab1, tab2 = st.tabs(["Saveti za uzgoj", "Mapa lokacije"])
