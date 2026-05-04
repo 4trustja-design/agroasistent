@@ -14,13 +14,16 @@ tab1, tab2, tab3 = st.tabs(["🍎 Voćarstvo", "🥦 Povrtarstvo", "📍 Mapa i 
 
 def generisi_savet(prompt):
     try:
+        # Konfiguracija sa eksplicitnim modelom 1.5-flash koji je najstabilniji
         genai.configure(api_key=api_key)
-        # Vraćamo se na provereni 'gemini-pro' model
-        model = genai.GenerativeModel('gemini-pro')
+        
+        # Forsiramo model koji sigurno radi na v1 verziji API-ja
+        model = genai.GenerativeModel(model_name="models/gemini-1.5-flash")
+        
         response = model.generate_content(prompt)
         return response.text
     except Exception as e:
-        return f"Greška na serveru: {str(e)}"
+        return f"Sistemska greška: {str(e)}"
 
 with tab1:
     st.header("Saveti za voćare (0-5 god)")
@@ -31,11 +34,11 @@ with tab1:
     if st.button(f"Generiši plan za {izabrano_voce}"):
         if api_key:
             with st.spinner("AI piše savete..."):
-                prompt = f"Daj detaljan plan zaštite i ishrane za {izabrano_voce} u {godina}. godini uzgoja u Srbiji."
+                prompt = f"Kao agronom, daj plan zaštite i ishrane za {izabrano_voce} u {godina}. godini uzgoja u Srbiji."
                 rezultat = generisi_savet(prompt)
                 st.markdown(rezultat)
         else:
-            st.error("Unesi API ključ u levom meniju!")
+            st.error("Unesi API ključ levo!")
 
 with tab2:
     st.header("Saveti za povrtare")
@@ -46,7 +49,7 @@ with tab2:
     if st.button(f"Generiši plan za {izabrano_povrce}"):
         if api_key:
             with st.spinner("AI piše savete..."):
-                prompt = f"Plan zaštite i ishrane za {izabrano_povrce} (uzgoj: {tip}) u Srbiji."
+                prompt = f"Plan zaštite i ishrane za {izabrano_povrce} ({tip}) u Srbiji."
                 rezultat = generisi_savet(prompt)
                 st.markdown(rezultat)
         else:
@@ -54,4 +57,4 @@ with tab2:
 
 with tab3:
     st.header("Lokacija i Vremenska Prognoza")
-    st.info("Aktiviramo nakon što stabilizujemo AI vezu.")
+    st.info("Ovaj deo aktiviramo čim se AI poveže.")
