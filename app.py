@@ -109,27 +109,29 @@ with col_in:
             Odgovori isključivo kao lista od 3 stavke.
             """
             
-            # Pokušaj generisanja sa automatskim ispravljanjem greške 404
+            # UNIVERZALNI POKUŠAJ: Koristimo najnoviji stabilni model bez prefiksa
             try:
-                # Primarni pokušaj sa Flash modelom
+                # Koristimo 'gemini-1.5-flash' bez ikakvih dodataka - to je najsigurnija putanja za novi SDK
                 odgovor = client.models.generate_content(
                     model='gemini-1.5-flash',
                     contents=prompt_text
                 )
-                if odgovor.text:
+                
+                if odgovor and odgovor.text:
                     st.session_state.zadaci = [z.strip() for z in odgovor.text.strip().split('\n') if len(z) > 10][:3]
                 else:
-                    st.error("AI je vratio prazan odgovor.")
-            except Exception:
+                    st.error("AI je vratio prazan odgovor. Pokušajte ponovo.")
+                    
+            except Exception as e:
+                # Ako i dalje prijavljuje 404, koristimo najnoviji model iz 2.0 serije koji je uvek dostupan na novom SDK
                 try:
-                    # Rezervni pokušaj sa Pro modelom ako Flash vrati 404
                     odgovor = client.models.generate_content(
-                        model='gemini-1.5-pro',
+                        model='gemini-2.0-flash',
                         contents=prompt_text
                     )
                     st.session_state.zadaci = [z.strip() for z in odgovor.text.strip().split('\n') if len(z) > 10][:3]
-                except Exception as e2:
-                    st.error(f"AI servis nije dostupan: {e2}")
+                except Exception as final_e:
+                    st.error(f"Kritična greška: {final_e}")
 
 with col_out:
     st.subheader("📋 Preporučeni radovi")
