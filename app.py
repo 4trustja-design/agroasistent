@@ -20,7 +20,7 @@ with tab1:
     if st.button(f"Generiši plan za {izabrano_voce}"):
         if api_key:
             genai.configure(api_key=api_key)
-            model = genai.GenerativeModel('gemini-pro')
+            model = genai.GenerativeModel('gemini-1.5-flash')
             prompt = f"Daj mi plan zaštite i ishrane za {izabrano_voce} u {godina}. godini uzgoja u Srbiji. Razdvoj zaštitu i ishranu."
             with st.spinner("AI piše..."):
                 odgovor = model.generate_content(prompt)
@@ -37,7 +37,7 @@ with tab2:
     if st.button(f"Generiši plan za {izabrano_povrce}"):
         if api_key:
             genai.configure(api_key=api_key)
-            model = genai.GenerativeModel('gemini-pro')
+            model = genai.GenerativeModel('gemini-1.5-flash')
             prompt = f"Daj mi plan zaštite i ishrane za {izabrano_povrce} ({tip}) od rasada do berbe u Srbiji."
             with st.spinner("AI piše..."):
                 odgovor = model.generate_content(prompt)
