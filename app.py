@@ -15,26 +15,33 @@ st.title("🌾 Pametni Poljoprivredni Savetnik")
 tab1, tab2, tab3 = st.tabs(["🍎 Voćarstvo", "🥦 Povrtarstvo", "📍 Mapa i Prognoza"])
 
 def pitaj_ai(pitanje):
-    # KORAK 1: Koristimo v1beta verziju koja je najfleksibilnija
+    # OVO JE NAJSIGURNIJA ADRESA NA SVETU
+    url = "https://googleapis.com"
+    
+    # Čistimo ključ od svega
     cist_kljuc = api_key.strip()
-    url = f"https://googleapis.com{cist_kljuc}"
+    
+    # Parametri se šalju odvojeno od adrese, Streamlit/Python ih spaja kako treba
+    parametri = {'key': cist_kljuc}
     
     headers = {'Content-Type': 'application/json'}
-    data = {
+    podaci = {
         "contents": [{"parts": [{"text": pitanje}]}]
     }
     
     try:
-        response = requests.post(url, headers=headers, json=data)
+        # requests.post će sam dodati ?key= na pravo mesto
+        response = requests.post(url, headers=headers, params=parametri, json=podaci)
         
         if response.status_code == 200:
-            res = response.json()
-            return res['candidates'][0]['content']['parts'][0]['text']
+            res_json = response.json()
+            return res_json['candidates'][0]['content']['parts'][0]['text']
         else:
-            # Ako dobijemo grešku, ispisaće nam tačno koji deo URL-a mu smeta
-            return f"Greška (Kod {response.status_code}): {response.text}"
+            return f"Greška sa servera (Kod {response.status_code}): {response.text}"
+            
     except Exception as e:
-        return f"Došlo je do greške: {str(e)}"
+        return f"Greška u konekciji: {str(e)}"
+
 
 with tab1:
     voce = st.selectbox("Izaberi voće:", ["Malina", "Šljiva", "Jabuka", "Borovnica", "Lešnik", "Trešnja"])
