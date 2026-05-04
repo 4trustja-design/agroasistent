@@ -3,13 +3,14 @@ import google.generativeai as genai
 import folium
 from streamlit_folium import st_folium
 
-# 1. Povezivanje sa tvojim API ključem
+# 1. Povezivanje
 try:
+    # Proveri da li je u Streamlit Secrets ključ nazvan tačno GEMINI_API_KEY
     API_KEY = st.secrets["GEMINI_API_KEY"]
     genai.configure(api_key=API_KEY)
     
-    # Pokušavamo sa "gemini-1.5-flash-latest" što je najsigurnija putanja
-    model = genai.GenerativeModel('gemini-1.5-flash') 
+    # Koristimo najnoviji stabilni model
+    model = genai.GenerativeModel('gemini-1.5-flash')
 except Exception as e:
     st.error(f"Greška pri konfiguraciji: {e}")
 
