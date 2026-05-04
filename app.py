@@ -4,12 +4,23 @@ import google.generativeai as genai
 st.set_page_config(page_title="AgroAsistent Srbija", layout="wide")
 
 with st.sidebar:
+    st.header("Podešavanja")
     api_key = st.text_input("Unesi svoj Gemini API Ključ:", type="password")
     st.info("Ključ uzmi na Google AI Studio.")
 
 st.title("🌾 Pametni Poljoprivredni Savetnik")
 
 tab1, tab2, tab3 = st.tabs(["🍎 Voćarstvo", "🥦 Povrtarstvo", "📍 Mapa i Prognoza"])
+
+def generisi_savet(prompt):
+    try:
+        genai.configure(api_key=api_key)
+        # Koristimo najnoviji stabilni model
+        model = genai.GenerativeModel('gemini-1.5-flash')
+        response = model.generate_content(prompt)
+        return response.text
+    except Exception as e:
+        return f"Greška: {str(e)}"
 
 with tab1:
     st.header("Saveti za voćare (0-5 god)")
@@ -19,14 +30,12 @@ with tab1:
     
     if st.button(f"Generiši plan za {izabrano_voce}"):
         if api_key:
-            genai.configure(api_key=api_key)
-            model = genai.GenerativeModel('gemini-1.5-flash')
-            prompt = f"Daj mi plan zaštite i ishrane za {izabrano_voce} u {godina}. godini uzgoja u Srbiji. Razdvoj zaštitu i ishranu."
-            with st.spinner("AI piše..."):
-                odgovor = model.generate_content(prompt)
-                st.markdown(odgovor.text)
+            with st.spinner("AI piše savete..."):
+                prompt = f"Kao agronom, daj detaljan plan zaštite i ishrane za {izabrano_voce} u {godina}. godini uzgoja u Srbiji. Koristi lokalne nazive preparata."
+                rezultat = generisi_savet(prompt)
+                st.markdown(rezultat)
         else:
-            st.error("Prvo unesi API ključ u meniju levo!")
+            st.error("Unesi API ključ u levom meniju!")
 
 with tab2:
     st.header("Saveti za povrtare")
@@ -36,15 +45,13 @@ with tab2:
     
     if st.button(f"Generiši plan za {izabrano_povrce}"):
         if api_key:
-            genai.configure(api_key=api_key)
-            model = genai.GenerativeModel('gemini-1.5-flash')
-            prompt = f"Daj mi plan zaštite i ishrane za {izabrano_povrce} ({tip}) od rasada do berbe u Srbiji."
-            with st.spinner("AI piše..."):
-                odgovor = model.generate_content(prompt)
-                st.markdown(odgovor.text)
+            with st.spinner("AI piše savete..."):
+                prompt = f"Kao stručnjak za povrtarstvo, daj plan zaštite i ishrane za {izabrano_povrce} (uzgoj: {tip}) u Srbiji."
+                rezultat = generisi_savet(prompt)
+                st.markdown(rezultat)
         else:
-            st.error("Prvo unesi API ključ!")
+            st.error("Unesi API ključ!")
 
 with tab3:
     st.header("Lokacija i Vremenska Prognoza")
-    st.write("Uskoro: Mapa i automatski podsetnici.")
+    st.info("Ovaj deo ćemo aktivirati u sledećem koraku čim proradi AI.")
