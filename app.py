@@ -9,10 +9,15 @@ try:
     API_KEY = st.secrets["GEMINI_API_KEY"]
     genai.configure(api_key=API_KEY)
     
-    # Koristimo najnoviji stabilni model
-    model = genai.GenerativeModel('gemini-1.5-flash')
+    # Pokušavamo da automatski nađemo dostupan model
+try:
+    dostupni_modeli = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
+    # Biramo prvi koji je 'flash' ili 'pro'
+    odabran = dostupni_modeli[0] if dostupni_modeli else 'gemini-1.5-flash'
+    model = genai.GenerativeModel(odabran)
 except Exception as e:
-    st.error(f"Greška pri konfiguraciji: {e}")
+    # Ako list_models ne prođe, idemo na najsigurniju varijantu
+    model = genai.GenerativeModel('gemini-1.5-flash')
 
 # 2. Funkcija koja zove AI
 def dobij_ai_savet(kategorija, vrsta, detalj):
