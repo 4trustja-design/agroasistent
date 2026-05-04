@@ -12,20 +12,30 @@ st.title("🌾 Pametni Poljoprivredni Savetnik")
 tab1, tab2, tab3 = st.tabs(["🍎 Voćarstvo", "🥦 Povrtarstvo", "📍 Lokacija"])
 
 def pitaj_ai(pitanje):
-    # Direktna veza ka Google API-ju (v1 verzija koja je stabilna)
-    url = f"https://googleapis.com{api_key}"
+    # Pažljivo razdvajamo bazu i ključ
+    baza_url = "https://googleapis.com"
+    kompletna_adresa = f"{baza_url}?key={api_key}"
+    
     headers = {'Content-Type': 'application/json'}
     data = {
-        "contents": [{"parts": [{"text": pitanje}]}]
+        "contents": [{
+            "parts": [{"text": pitanje}]
+        }]
     }
     
     try:
-        response = requests.post(url, headers=headers, json=data)
-        odgovor = response.json()
-        # Izvlačenje teksta iz komplikovanog Google odgovora
-        return odgovor['candidates'][0]['content']['parts'][0]['text']
+        response = requests.post(kompletna_adresa, headers=headers, json=data)
+        odgovor_json = response.json()
+        
+        # Provera da li nam je Google vratio tekst
+        if 'candidates' in odgovor_json:
+            return odgovor_json['candidates'][0]['content']['parts'][0]['text']
+        else:
+            return f"AI nije poslao odgovor. Proveri ključ. Poruka: {odgovor_json}"
+            
     except Exception as e:
-        return f"Greška pri povezivanju: {str(odgovor) if 'odgovor' in locals() else e}"
+        return f"Greška u konekciji: {str(e)}"
+
 
 with tab1:
     voce = st.selectbox("Voće:", ["Malina", "Šljiva", "Jabuka", "Borovnica"])
