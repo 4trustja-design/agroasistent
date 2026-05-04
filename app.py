@@ -18,14 +18,10 @@ except Exception as e:
 def dobij_ai_savet(kategorija, vrsta, detalj):
     prompt = f"Ti si agronom iz Srbije. Daj plan za {kategorija}, vrsta {vrsta}, faza {detalj}. Odgovori na srpskom."
     try:
-        # Dodajemo generisanje sadržaja
-        response = model.generate_content(prompt)
-        if response.text:
-            return response.text
-        else:
-            return "AI nije vratio odgovor. Pokušajte ponovo."
+        # Dodajemo stream=False radi stabilnosti na početku
+        response = model.generate_content(prompt, stream=False)
+        return response.text
     except Exception as e:
-        # Ako i dalje prijavljuje 404, ispisujemo tačnu grešku radi dijagnostike
         return f"Greška u modelu: {str(e)}"
 
 # 3. Izgled aplikacije
