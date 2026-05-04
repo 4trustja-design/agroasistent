@@ -12,7 +12,9 @@ tab1, tab2 = st.tabs(["Saveti", "Mapa"])
 
 def pozovi_gemini(pitanje):
     # OVDE SMO STAVILI RAZMAK I STROGO ODVOJILI KLJUČ
+        # Koristimo stabilnu v1 verziju i proveren model
     link = "https://googleapis.com"
+
     parametri = {'key': kljuc_za_ai.strip()}
     zaglavlje = {'Content-Type': 'application/json'}
     podaci = {"contents": [{"parts": [{"text": pitanje}]}]}
