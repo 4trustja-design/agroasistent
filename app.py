@@ -1,55 +1,65 @@
 import streamlit as st
-import pandas as pd
-from datetime import datetime
+import google.generativeai as genai
+import folium
+from streamlit_folium import st_folium
 
-# --- PODEŠAVANJE ---
-st.set_page_config(page_title="AI AgroAsistent", page_icon="🤖")
+# 1. Povezivanje sa tvojim API ključem iz Secrets-a
+try:
+    API_KEY = st.secrets["GEMINI_API_KEY"]
+    genai.configure(api_key=API_KEY)
+    model = genai.GenerativeModel('gemini-pro')
+except Exception as e:
+    st.error("Greška: API ključ nije pronađen. Proveri 'Secrets' na Streamlit-u.")
 
-# Funkcija kojom AI generiše odgovor (Simulacija moćnog prompta)
-def generisi_ai_savet(kategorija, vrsta, detalj):
-    # Ovde aplikacija šalje "naredbu" AI-u
-    prompt = f"Ti si stručni agronom iz Srbije. Daj precizne savete za {kategorija}: {vrsta}. "
-    prompt += f"Specifičan fokus: {detalj}. "
-    prompt += "Podeli odgovor na: 1. Radovi, 2. Zaštita, 3. Prehrana. Koristi kratke crte."
+# 2. Funkcija koja stvarno zove AI
+def dobij_ai_savet(kategorija, vrsta, detalj):
+    prompt = f"""
+    Ti si stručni agronom iz Srbije. Korisnik gaji {vrsta} ({kategorija}) u fazi/uslovima: {detalj}.
+    Daj mu konkretan plan radova, zaštite i prihrane za podneblje Srbije.
+    Odgovori na srpskom, koristi emotikone i budi veoma precizan.
+    """
+    try:
+        response = model.generate_content(prompt)
+        return response.text
+    except Exception as e:
+        return f"Greška pri komunikaciji sa AI: {e}"
+
+# 3. Izgled aplikacije
+st.set_page_config(page_title="AI AgroAsistent Srbija", page_icon="🚜")
+st.title("🚜 AI AgroAsistent Srbija")
+
+tab1, tab2, tab3 = st.tabs(["🍎 Voćarstvo", "🥦 Povrtarstvo", "📍 Mapa i Vreme"])
+
+with tab1:
+    voce = st.selectbox("Izaberite voće:", ["Šljiva", "Jabuka", "Malina", "Trešnja", "Lešnik", "Borovnica"])
+    faza = st.select_slider("Starost/Faza:", options=["Sadnja", "1. godina", "2. godina", "3. godina", "4. godina", "Pun rod"])
     
-    # Za sada ćemo koristiti placeholder koji simulira AI, 
-    # dok ne ubacimo tvoj OpenAI ili Gemini ključ u Streamlit Secrets.
-    return f"### AI Savet za {vrsta} ({detalj})\n" + "Uskoro će se ovde pojaviti personalizovani plan generisan AI-om..."
-
-# --- INTERFEJS ---
-st.title("🤖 AI AgroAsistent Srbija")
-st.markdown("Aplikacija koja koristi veštačku inteligenciju za planiranje vašeg imanja.")
-
-glavni_meni = st.sidebar.selectbox("Izaberite sektor:", ["🍎 Voćarstvo", "🥦 Povrtarstvo"])
-
-if glavni_meni == "🍎 Voćarstvo":
-    vrsta = st.selectbox("Izaberite voće:", ["Šljiva", "Jabuka", "Malina", "Trešnja", "Lešnik", "Borovnica"])
-    faza = st.select_slider("Starost/Faza:", options=["Sadnja", "1. godina", "2. godina", "3. godina", "Pun rod"])
-    
-    if st.button("Generiši AI plan radova"):
-        with st.spinner('AI agronom analizira podatke...'):
-            # Ovde pozivamo AI funkciju
-            savet = generisi_ai_savet("voće", vrsta, faza)
+    if st.button("Generiši AI plan za voće"):
+        with st.spinner('AI agronom piše plan...'):
+            savet = dobij_ai_savet("Voćarstvo", voce, faza)
             st.markdown(savet)
 
-elif glavni_meni == "🥦 Povrtarstvo":
-    vrsta = st.selectbox("Izaberite povrće:", ["Paradajz", "Paprika", "Krastavac", "Crni luk", "Krompir"])
+with tab2:
+    povrce = st.selectbox("Izaberite povrće:", ["Paradajz", "Paprika", "Krastavac", "Crni luk", "Kupus"])
     uzgoj = st.radio("Način uzgoja:", ["Plastenik", "Otvoreno polje"])
     
-    if st.button("Prikaži plan proizvodnje"):
+    if st.button("Generiši AI plan za povrće"):
         with st.spinner('AI analizira uslove...'):
-            savet = generisi_ai_savet("povrće", vrsta, uzgoj)
+            savet = dobij_ai_savet("Povrtarstvo", povrce, uzgoj)
             st.markdown(savet)
 
-# --- ČEK LISTA KOJA SE NE BRIŠE (Local Storage) ---
+with tab3:
+    st.info("Kliknite na mapu da označite lokaciju vašeg zasada.")
+    m = folium.Map(location=[44.0165, 21.0059], zoom_start=7)
+    st_folium(m, height=300, width=800)
+
 st.divider()
 st.subheader("✅ Moja dnevna ček-lista")
-aktivnost = st.text_input("Dodaj novu aktivnost (npr. Prskanje šljive):")
-if st.button("Dodaj na listu"):
-    if 'lista' not in st.session_state:
-        st.session_state.lista = []
-    st.session_state.lista.append(aktivnost)
+aktivnost = st.text_input("Dodaj novu obavezu:")
+if st.button("Dodaj"):
+    if 'tasks' not in st.session_state: st.session_state.tasks = []
+    st.session_state.tasks.append(aktivnost)
 
-if 'lista' in st.session_state:
-    for stavka in st.session_state.lista:
-        st.checkbox(stavka, key=stavka)
+if 'tasks' in st.session_state:
+    for t in st.session_state.tasks:
+        st.checkbox(t)
