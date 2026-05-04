@@ -11,7 +11,7 @@ st.title("🌾 AgroAsistent Srbija")
 def pozovi_ai(pitanje):
     # Proverena i najnovija putanja koju Google preporučuje za 2024. godinu
     cist_kljuc = kljuc.strip()
-    adresa = f"https://googleapis.com{cist_kljuc}"
+adresa = f"https://googleapis.com{cist_kljuc}"
     
     zaglavlje = {'Content-Type': 'application/json'}
     podaci = {
