@@ -3,6 +3,10 @@ google-genai
 folium
 streamlit-folium
 requestsstreamlit
+google-genai
+folium
+streamlit-folium
+requestsstreamlit
 google-generativeai
 folium
 streamlit-folium
