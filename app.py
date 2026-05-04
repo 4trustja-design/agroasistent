@@ -20,7 +20,7 @@ def generisi_savet(prompt):
         # Povezivanje sa Google AI
         genai.configure(api_key=api_key.strip())
         # Korišćenje najstabilnijeg modela današnjice
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        model = genai.GenerativeModel('gemini-1.0-pro')
         odgovor = model.generate_content(prompt)
         return odgovor.text
     except Exception as e:
