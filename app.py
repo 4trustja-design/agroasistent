@@ -1,52 +1,52 @@
 import streamlit as st
-import google.generativeai as genai
+import requests
+import json
 
 st.set_page_config(page_title="AgroAsistent Srbija", layout="wide")
 
-# Podešavanje API-ja direktno
 with st.sidebar:
-    st.header("Podešavanja")
     api_key = st.text_input("Unesi svoj Gemini API Ključ:", type="password")
 
 st.title("🌾 Pametni Poljoprivredni Savetnik")
 
-tab1, tab2, tab3 = st.tabs(["🍎 Voćarstvo", "🥦 Povrtarstvo", "📍 Mapa i Prognoza"])
+tab1, tab2, tab3 = st.tabs(["🍎 Voćarstvo", "🥦 Povrtarstvo", "📍 Lokacija"])
 
-def pokreni_ai(pitanje):
+def pitaj_ai(pitanje):
+    # Direktna veza ka Google API-ju (v1 verzija koja je stabilna)
+    url = f"https://googleapis.com{api_key}"
+    headers = {'Content-Type': 'application/json'}
+    data = {
+        "contents": [{"parts": [{"text": pitanje}]}]
+    }
+    
     try:
-        genai.configure(api_key=api_key)
-        # Koristimo najosnovnije ime modela bez ikakvih dodataka
-        model = genai.GenerativeModel('gemini-pro')
-        response = model.generate_content(pitanje)
-        return response.text
+        response = requests.post(url, headers=headers, json=data)
+        odgovor = response.json()
+        # Izvlačenje teksta iz komplikovanog Google odgovora
+        return odgovor['candidates'][0]['content']['parts'][0]['text']
     except Exception as e:
-        # Ako 'gemini-pro' ne prođe, probali smo sve verzije naziva
-        return f"Greška: {str(e)}"
+        return f"Greška pri povezivanju: {str(odgovor) if 'odgovor' in locals() else e}"
 
 with tab1:
-    st.header("Saveti za voćare")
-    voce = st.selectbox("Izaberi voće:", ["Malina", "Šljiva", "Jabuka", "Borovnica"])
-    godina = st.slider("Starost (god):", 0, 5, 1)
-    
-    if st.button("Prikaži plan"):
+    voce = st.selectbox("Voće:", ["Malina", "Šljiva", "Jabuka", "Borovnica"])
+    godina = st.slider("Starost:", 0, 5, 1)
+    if st.button("Prikaži plan zaštite"):
         if api_key:
             with st.spinner("AI piše..."):
-                tekst = pokreni_ai(f"Plan zaštite i ishrane za {voce} u {godina}. godini u Srbiji.")
-                st.write(tekst)
+                rezultat = pitaj_ai(f"Daj detaljan plan zaštite i ishrane za {voce} u {godina}. godini u Srbiji.")
+                st.markdown(rezultat)
         else:
-            st.error("Unesi ključ levo!")
+            st.error("Unesi API ključ levo!")
 
 with tab2:
-    st.header("Saveti za povrtare")
-    povrce = st.selectbox("Izaberi povrće:", ["Paradajz", "Paprika", "Krastavac"])
-    
-    if st.button("Generiši savet"):
+    povrce = st.selectbox("Povrće:", ["Paradajz", "Paprika", "Krastavac"])
+    if st.button("Prikaži savete"):
         if api_key:
             with st.spinner("AI piše..."):
-                tekst = pokreni_ai(f"Plan uzgoja za {povrce} u Srbiji.")
-                st.write(tekst)
+                rezultat = pitaj_ai(f"Plan uzgoja za {povrce} u Srbiji.")
+                st.markdown(rezultat)
         else:
             st.error("Unesi ključ!")
 
 with tab3:
-    st.info("Mapa će biti dodata čim proradi AI veza.")
+    st.info("Kada AI proradi, ovde stavljamo mapu.")
