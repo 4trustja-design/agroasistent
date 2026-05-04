@@ -10,7 +10,7 @@ try:
     genai.configure(api_key=API_KEY)
     
     # Koristimo najnoviji stabilni model
-    model = genai.GenerativeModel('gemini-1.5-flash')
+    model = genai.GenerativeModel('models/gemini-1.5-flash-latest')
 except Exception as e:
     st.error(f"Greška pri konfiguraciji: {e}")
 
