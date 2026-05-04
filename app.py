@@ -6,105 +6,140 @@ from datetime import datetime
 import requests
 
 # --- 1. KONFIGURACIJA ---
+# Link tvoje forme za upisivanje u tabelu
 FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSccBzwQSmytB6TSzYLmcj429FiWMVGm7WUTUi5GqZZUHV6C_g/formResponse"
 
 try:
     API_KEY = st.secrets["GEMINI_API_KEY"]
     genai.configure(api_key=API_KEY)
     
-    # DODATO: Isključujemo sigurnosne filtere koji blokiraju nazive preparata
+    # Sigurnosna podešavanja da AI ne blokira nazive preparata
     safety_settings = [
         {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
         {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
         {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
         {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
     ]
-    model = genai.GenerativeModel(model_name='gemini-1.5-flash', safety_settings=safety_settings)
+    
+    # Inicijalizacija modela - Koristimo 'gemini-1.5-flash'
+    # Ako dobiješ 404, ovde promeni u 'gemini-pro'
+    model = genai.GenerativeModel(
+        model_name='gemini-1.5-flash', 
+        safety_settings=safety_settings
+    )
 except Exception as e:
-    st.error("Problem sa API ključem u Secrets podešavanjima.")
+    st.error(f"Problem sa konfiguracijom: {e}")
 
 # --- 2. FUNKCIJE ---
+
 def posalji_u_tabelu(ime, radnja):
-    payload = {"entry.880598687": ime, "entry.31175628": radnja, "entry.1741593922": "Obavljeno"}
-    try: requests.post(FORM_URL, data=payload); return True
-    except: return False
+    """Šalje podatke u Google Sheets preko tvoje forme."""
+    payload = {
+        "entry.880598687": ime,    
+        "entry.31175628": radnja,  
+        "entry.1741593922": "Obavljeno" 
+    }
+    try:
+        requests.post(FORM_URL, data=payload)
+        return True
+    except:
+        return False
 
 def dobij_vreme(lat, lon):
+    """Uzima prognozu za pinovanu lokaciju."""
     url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current_weather=true&daily=precipitation_sum&timezone=auto"
     try:
         r = requests.get(url).json()
         return r['current_weather']['temperature'], r['daily']['precipitation_sum'][0]
-    except: return None, None
+    except:
+        return None, None
 
-# --- 3. UI ---
+# --- 3. UI DIZAJN ---
+
 st.set_page_config(page_title="AgroSmart Srbija", layout="wide")
 
 with st.sidebar:
-    st.header("👤 Profil")
-    korisnik = st.text_input("Ime / ID:", "Gost")
+    st.header("👤 Korisnik")
+    korisnik = st.text_input("Vaše ime (ID):", "Gost")
     st.divider()
     st.write("📊 [Tabela radova](https://docs.google.com/spreadsheets/d/1DU-w1I6yMuLIq9qQYhMGxdWds9dvaG9QlezJs87vExk/edit)")
 
 st.title(f"🚜 AgroAsistent: {korisnik}")
 
-# MAPA I VREME
+# Mapa i Vreme
 c1, c2 = st.columns([2, 1])
 with c1:
-    st.subheader("📍 Odaberi lokaciju")
-    # Centar Srbije
+    st.subheader("📍 Lokacija imanja")
     m = folium.Map(location=[44.0165, 21.0059], zoom_start=7)
     folium.LatLngPopup().add_to(m)
     
-    # POBOALJŠANO: Mapa sada bolje hvata klik
-    map_data = st_folium(m, height=300, use_container_width=True, key="agro_mapa")
+    # Interaktivna mapa sa fiksiranim ključem
+    map_data = st_folium(m, height=300, use_container_width=True, key="agro_map_v1")
     
-    # Logika za koordinate
     lat, lon = 44.0165, 21.0059
     if map_data and map_data.get('last_clicked'):
         lat = map_data['last_clicked']['lat']
         lon = map_data['last_clicked']['lng']
-        st.success(f"Lokacija pinovana: {round(lat,3)}, {round(lon,3)}")
+        st.success(f"Lokacija potvrđena: {round(lat,3)}, {round(lon,3)}")
 
 with c2:
-    st.subheader("🌦️ Prognoza")
+    st.subheader("🌦️ Lokalna prognoza")
     temp, kisa = dobij_vreme(lat, lon)
     if temp is not None:
         st.metric("Temperatura", f"{temp}°C")
         st.metric("Padavine danas", f"{kisa}mm")
+    else:
+        st.info("Kliknite na mapu za prognozu.")
 
 st.divider()
 
-# INPUT I AI
-col_input, col_savet = st.columns([1, 2])
-with col_input:
-    st.subheader("⚙️ Podešavanja")
-    grana = st.radio("Grana:", ["Voćarstvo", "Povrtarstvo"])
-    if grana == "Voćarstvo":
-        kultura = st.selectbox("Kultura:", ["Šljiva", "Jabuka", "Malina", "Trešnja"])
-        detalj = st.selectbox("Faza:", ["1. godina", "2. godina", "Pun rod"])
-    else:
-        kultura = st.selectbox("Kultura:", ["Paradajz", "Paprika", "Krastavac"])
-        detalj = st.selectbox("Način:", ["Otvoreno polje", "Plastenik"])
+# Parametri i AI Preporuke
+col_in, col_out = st.columns([1, 2])
 
-    if st.button("Generiši plan"):
-        with st.spinner("AI analizira..."):
-            prompt = f"Stručni agronom Srbija. {grana}, {kultura}, {detalj}. Maj mesec. Temp: {temp}C. Daj 3 kratka zadatka sa nazivima preparata i dozom. Lista od 3 stavke."
+with col_in:
+    st.subheader("⚙️ Podešavanja")
+    grana = st.radio("Izaberite granu:", ["Voćarstvo", "Povrtarstvo"])
+    
+    if grana == "Voćarstvo":
+        kultura = st.selectbox("Kultura:", ["Šljiva", "Jabuka", "Malina", "Trešnja", "Višnja"])
+        detalj = st.selectbox("Starost/Faza:", ["1. godina", "2. godina", "3. godina", "Pun rod"])
+    else:
+        kultura = st.selectbox("Kultura:", ["Paradajz", "Paprika", "Krastavac", "Kupus", "Krompir"])
+        detalj = st.selectbox("Način uzgoja:", ["Otvoreno polje", "Plastenik"])
+
+    if st.button("Generiši plan radova"):
+        with st.spinner("Agronom analizira podatke..."):
+            vreme_info = f"Temp: {temp}C, Kiša: {kisa}mm." if temp else ""
+            prompt = f"""
+            Ti si agronom u Srbiji. Oblast: {grana}. Kultura: {kultura} ({detalj}). 
+            Mesec: Maj. {vreme_info}
+            Daj 3 konkretna zadatka. Za svaki zadatak navedi naziv mere i tačan preparat sa dozom.
+            Odgovori isključivo kao lista od 3 stavke (1. Zadatak, 2. Zadatak, 3. Zadatak).
+            """
             try:
                 response = model.generate_content(prompt)
                 if response and response.text:
-                    st.session_state.lista_zadataka = [z.strip() for z in response.text.split('\n') if len(z) > 10][:3]
+                    # Čišćenje teksta i pravljenje liste
+                    st.session_state.zadaci = [z.strip() for z in response.text.strip().split('\n') if len(z) > 10][:3]
                 else:
-                    st.error("AI je vratio prazan odgovor. Pokušajte ponovo.")
+                    st.error("AI nije vratio odgovor. Pokušajte ponovo.")
             except Exception as e:
-                st.error(f"Greška: {str(e)}")
+                st.error(f"Greška pri generisanju: {e}")
 
-with col_savet:
-    st.subheader("📋 Preporučeni radovi")
-    if 'lista_zadataka' in st.session_state:
-        for zadatak in st.session_state.lista_zadataka:
-            if st.button(f"✅ Završeno: {zadatak}", use_container_width=True):
+with col_out:
+    st.subheader("📋 Preporučeni zadaci")
+    if 'zadaci' in st.session_state:
+        for zadatak in st.session_state.zadaci:
+            if st.button(f"✅ Obavio sam: {zadatak}", use_container_width=True):
                 if korisnik != "Gost":
                     if posalji_u_tabelu(korisnik, zadatak):
-                        st.success("Zapisano!")
-                    else: st.error("Greška sa tabelom.")
-                else: st.warning("Unesite ime levo.")
+                        st.toast(f"Sačuvano za korisnika {korisnik}!", icon="💾")
+                    else:
+                        st.error("Slanje u tabelu nije uspelo.")
+                else:
+                    st.warning("Prijavite se (unesite ime) u meniju levo.")
+    else:
+        st.write("Ovde će se pojaviti zadaci nakon što kliknete na 'Generiši plan radova'.")
+
+st.sidebar.markdown("---")
+st.sidebar.caption("v1.2 | AgroSmart AI Srbija")
