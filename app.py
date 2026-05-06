@@ -8,10 +8,11 @@ from datetime import datetime
 # --- 1. POSTAVKE ---
 st.set_page_config(page_title="AgroAsistent AI Pro", layout="wide")
 
-# --- 2. KONFIGURACIJA AI MODELA ---
+# --- KONFIGURACIJA AI MODELA ---
 if "GEMINI_API_KEY" in st.secrets:
     genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
-    model = genai.GenerativeModel('gemini-1.5-flash')
+    # Promenili smo ime modela u 'gemini-pro' koji je najstabilniji za v1
+    model = genai.GenerativeModel('gemini-pro') 
 else:
     st.error("KLJUČ NIJE PRONAĐEN U SECRETS!")
 
