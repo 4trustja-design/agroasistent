@@ -62,38 +62,54 @@ with tabs[0]:
     kultura = st.selectbox("Izaberi kulturu za koju želiš AI plan:", 
                           ["Šljiva", "Malina", "Jabuka", "Paradajz", "Paprika", "Borovnica", "Vinova loza"])
 
-    if st.button(f"✨ Generiši stručni plan za {kultura}", type="primary"):
+   if st.button(f"✨ Generiši stručni plan za {kultura}", type="primary"):
         if "GEMINI_API_KEY" in st.secrets:
             api_key = st.secrets["GEMINI_API_KEY"]
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
+            
+            # Promena na stabilnu v1 verziju i model
+            url = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={api_key}"
             
             prompt = f"""Ti si iskusni agronom u Srbiji. Napravi konkretan plan radova za {kultura} u mesecu {naziv_meseca}.
             Trenutni meteo uslovi: {meteo_tekst}.
-            Navedi 4 ključna zadatka. Za svaki zadatak preporuči konkretno zaštitno sredstvo (preparat) ili vrstu đubriva koja se koristi u Srbiji.
-            Formatiraj odgovor ovako:
-            Zadatak 1 | Detaljan opis i naziv preparata
-            Zadatak 2 | Detaljan opis i naziv preparata"""
+            Navedi 4 ključna zadatka. Za svaki zadatak preporuči konkretno zaštitno sredstvo ili đubrivo koje se koristi u Srbiji.
+            Formatiraj odgovor isključivo ovako (bez uvodnih reči):
+            Zadatak 1 | Opis i preparat
+            Zadatak 2 | Opis i preparat"""
 
-            payload = {"contents": [{"parts": [{"text": prompt}]}]}
+            payload = {
+                "contents": [{"parts": [{"text": prompt}]}],
+                "generationConfig": {"temperature": 0.7}
+            }
             
             with st.spinner("AI agronom analizira podatke..."):
                 try:
-                    r = requests.post(url, json=payload, timeout=20).json()
-                    odgovor = r["candidates"][0]["content"]["parts"][0]["text"]
+                    res = requests.post(url, json=payload, timeout=20)
+                    data = res.json()
                     
-                    st.subheader(f"✅ Tvoji zadaci za {kultura}:")
-                    linije = odgovor.split('\n')
-                    for i, linija in enumerate(linije):
-                        if "|" in linija:
-                            zadatak, detalj = linija.split("|")
-                            col_c, col_t = st.columns([1, 10])
-                            with col_c:
-                                st.checkbox("", key=f"ai_task_{i}")
-                            with col_t:
-                                st.markdown(f"**{zadatak.strip()}**")
-                                st.write(detalj.strip())
-                except:
-                    st.error("Došlo je do greške u komunikaciji sa AI modelom.")
+                    # Provera da li je Google vratio grešku u JSON-u
+                    if "error" in data:
+                        st.error(f"Google API Greška: {data['error']['message']}")
+                    elif "candidates" in data:
+                        odgovor = data["candidates"][0]["content"]["parts"][0]["text"]
+                        
+                        st.subheader(f"✅ Tvoji zadaci za {kultura}:")
+                        linije = odgovor.strip().split('\n')
+                        for i, linija in enumerate(linije):
+                            if "|" in linija:
+                                delovi = linija.split("|")
+                                zadatak = delovi[0].strip()
+                                detalj = delovi[1].strip()
+                                
+                                col_c, col_t = st.columns([1, 10])
+                                with col_c:
+                                    st.checkbox("", key=f"ai_task_{kultura}_{i}")
+                                with col_t:
+                                    st.markdown(f"**{zadatak}**")
+                                    st.write(detalj)
+                    else:
+                        st.error("Nepoznat odgovor od Google-a. Pokušaj ponovo.")
+                except Exception as e:
+                    st.error(f"Sistemska greška: {str(e)}")
         else:
             st.warning("Molimo podesite API ključ u Secrets (GEMINI_API_KEY).")
 
