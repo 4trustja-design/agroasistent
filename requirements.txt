@@ -1,5 +1,5 @@
-google-genai
 streamlit
 folium
 streamlit-folium
 requests
+google-generativeai
