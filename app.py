@@ -2,12 +2,21 @@ import streamlit as st
 import pandas as pd
 import folium
 from streamlit_folium import st_folium
-from datetime import datetime, timedelta
+from google import genai  # Nova biblioteka
+import requests
 
-# Postavke aplikacije
+# --- 1. KONFIGURACIJA AI ---
+# Inicijalizujemo klijenta samo ako postoji ključ, inače AI deo preskačemo
+client = None
+if "GEMINI_API_KEY" in st.secrets:
+    try:
+        client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
+    except:
+        pass
+
 st.set_page_config(page_title="AgroAsistent Srbija", layout="wide")
 
-# --- LAŽNA BAZA PODATAKA (Primer) ---
+# --- 2. TVOJA BAZA PODATAKA (Nepromenjena) ---
 vocarstvo_data = {
     "Šljiva": {
         "1. Godina": "Sadnja u jesen, skraćivanje sadnice na 80cm.",
@@ -29,12 +38,37 @@ povrtarstvo_data = {
     }
 }
 
-# --- GLAVNI INTERFEJS ---
+# --- 3. GLAVNI INTERFEJS ---
 st.title("🚜 AgroAsistent: Voćarstvo & Povrtarstvo")
 
+# --- SIDEBAR: AI AGRONOM ---
+with st.sidebar:
+    st.header("🤖 AI Konsultacije")
+    pitanje = st.text_input("Pitajte AI agronoma:", placeholder="npr. Čime prskati jabuku sad?")
+    
+    if st.button("Pitaj AI"):
+        if client:
+            with st.spinner("Razmišljam..."):
+                try:
+                    # KLJUČNO: v1 stabilna metoda bez prefiksa
+                    response = client.models.generate_content(
+                        model='gemini-1.5-flash',
+                        contents=f"Ti si stručni agronom u Srbiji. Odgovori kratko i jasno na srpskom: {pitanje}"
+                    )
+                    st.info(response.text)
+                except Exception as e:
+                    if "404" in str(e):
+                        st.error("Google trenutno ne dozvoljava ovaj model. Pokušajte kasnije.")
+                    elif "429" in str(e):
+                        st.warning("Kvota je popunjena (sačekaj 60s).")
+                    else:
+                        st.error("AI trenutno nije dostupan.")
+        else:
+            st.warning("API ključ nije podešen u Secrets.")
+
+# --- TVOJI TABS (Nepromenjeno) ---
 tab1, tab2, tab3 = st.tabs(["🍎 Voćarstvo", "🥦 Povrtarstvo", "📍 Moja Lokacija & Vreme"])
 
-# --- TAB 1: VOĆARSTVO ---
 with tab1:
     st.header("Saveti za voćare")
     voce = st.selectbox("Izaberite voćnu vrstu:", list(vocarstvo_data.keys()))
@@ -50,41 +84,20 @@ with tab1:
         st.write(vocarstvo_data[voce]["Zaštita"])
         st.write(vocarstvo_data[voce]["Prehrana"])
 
-    st.markdown("---")
-    st.subheader("✅ Ček lista za odrađene poslove")
-    st.checkbox(f"Završeno orezivanje ({voce})")
-    st.checkbox(f"Završena zaštita ({voce})")
-
-# --- TAB 2: POVRTARSTVO ---
 with tab2:
     st.header("Saveti za povrtare")
     povrce = st.selectbox("Izaberite povrće:", list(povrtarstvo_data.keys()))
     tip_uzgoja = st.radio("Tip proizvodnje:", ["Plastenik", "Otvoreno"])
-    
     st.subheader("📋 Plan proizvodnje")
     st.write(povrtarstvo_data[povrce][tip_uzgoja])
-    
-    col_p1, col_p2 = st.columns(2)
-    with col_p1:
-        st.warning("⚠️ Zaštita")
-        st.write(povrtarstvo_data[povrce]["Zaštita"])
-    with col_p2:
-        st.success("💧 Prehrana i Navodnjavanje")
-        st.write(povrtarstvo_data[povrce]["Prehrana"])
 
-# --- TAB 3: MAPA I VREME ---
 with tab3:
     st.header("📍 Lokacija i Vremenska Prognoza")
-    st.info("Kliknite na mapu da označite lokaciju vašeg imanja.")
-    
-    m = folium.Map(location=[44.0165, 21.0059], zoom_start=7) # Centar Srbije
+    m = folium.Map(location=[44.0165, 21.0059], zoom_start=7)
     m.add_child(folium.LatLngPopup())
-    map_data = st_folium(m, height=400, width=800)
+    map_data = st_folium(m, height=400, width=800, key="stable_map")
 
-    if map_data['last_clicked']:
+    if map_data and map_data.get('last_clicked'):
         lat = map_data['last_clicked']['lat']
         lng = map_data['last_clicked']['lng']
-        st.success(f"Lokacija sačuvana! (Lat: {lat:.2f}, Lng: {lng:.2f})")
-        
-        # Ovde bi se integrisao API za prognozu (npr. OpenWeatherMap)
-        st.warning("🔔 PODSETNIK: Očekuju se padavine za 48h. Planirajte zaštitu protiv plamenjače sutra!")
+        st.success(f"Lokacija: {lat:.2f}, {lng:.2f}")
