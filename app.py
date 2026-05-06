@@ -108,5 +108,49 @@ with tabs[4]: # AI
             except:
                 st.error("AI nije dostupan.")
 
-with tabs[0]: st.write("Saveti za voće u pripremi...")
-with tabs[1]: st.write("Saveti za povrće u pripremi...")
+# --- POPUNJAVANJE TABOVA PODACIMA ---
+
+with tabs[0]: # 🍎 Voćarstvo
+    st.header("Saveti za voćare")
+    vocarstvo_detalji = {
+        "Šljiva": {
+            "Opis": "Šljiva zahteva duboka i propusna zemljišta. Najbolje uspeva na blagim nagibima.",
+            "Sadnja": "Sadnja se obavlja u jesen ili rano proleće na razmak 5x4m.",
+            "Zanimljivost": "Srbija je jedan od najvećih svetskih proizvođača šljive."
+        },
+        "Malina": {
+            "Opis": "Malina traži dosta vlage i specifičnu mikroklimu.",
+            "Sadnja": "Sadi se u redove sa naslonom (žicom) na razmak 2.5x0.3m.",
+            "Zanimljivost": "Sorta Willamette je najzastupljenija u našim krajevima."
+        }
+    }
+    
+    izbor_voce = st.selectbox("Izaberi voćnu vrstu za detalje:", list(vocarstvo_detalji.keys()))
+    v = vocarstvo_detalji[izbor_voce]
+    
+    col_v1, col_v2 = st.columns(2)
+    with col_v1:
+        st.subheader("📖 Opšte informacije")
+        st.write(v["Opis"])
+    with col_v2:
+        st.subheader("🌱 Saveti za sadnju")
+        st.write(v["Sadnja"])
+    st.info(f"💡 {v['Zanimljivost']}")
+
+with tabs[1]: # 🥦 Povrtarstvo
+    st.header("Saveti za povrtare")
+    povrce_detalji = {
+        "Paradajz": {
+            "Tip": "Plastenik i Otvoreno polje",
+            "Savet": "Obavezno zakidanje zaperaka radi krupnijeg ploda.",
+            "Zalivanje": "Sistem kap po kap je najefikasniji."
+        }
+    }
+    
+    izbor_povrce = st.selectbox("Izaberi povrće:", list(povrce_detalji.keys()))
+    p = povrce_detalji[izbor_povrce]
+    
+    st.subheader(f"Gajenje: {izbor_povrce}")
+    st.markdown(f"- **Tip uzgoja:** {p['Tip']}")
+    st.markdown(f"- **Ključni savet:** {p['Savet']}")
+    st.markdown(f"- **Navodnjavanje:** {p['Zalivanje']}")
