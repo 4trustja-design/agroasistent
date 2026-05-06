@@ -41,30 +41,38 @@ povrtarstvo_data = {
 # --- 3. GLAVNI INTERFEJS ---
 st.title("🚜 AgroAsistent: Voćarstvo & Povrtarstvo")
 
-# --- SIDEBAR: AI AGRONOM ---
+# --- SIDEBAR: AI AGRONOM (Direktna metoda) ---
 with st.sidebar:
     st.header("🤖 AI Konsultacije")
-    pitanje = st.text_input("Pitajte AI agronoma:", placeholder="npr. Čime prskati jabuku sad?")
+    pitanje = st.text_input("Pitajte AI agronoma:", placeholder="npr. Čime prskati jabuku?")
     
     if st.button("Pitaj AI"):
-        if client:
-            with st.spinner("Razmišljam..."):
+        if "GEMINI_API_KEY" in st.secrets:
+            api_key = st.secrets["GEMINI_API_KEY"]
+            # Direktan URL ka Google API-ju (zaobilazimo biblioteku)
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
+            
+            payload = {
+                "contents": [{
+                    "parts": [{"text": f"Ti si stručni agronom u Srbiji. Odgovori kratko: {pitanje}"}]
+                }]
+            }
+            
+            with st.spinner("AI razmišlja..."):
                 try:
-                    # KLJUČNO: v1 stabilna metoda bez prefiksa
-                    response = client.models.generate_content(
-                        model='gemini-1.5-flash',
-                        contents=f"Ti si stručni agronom u Srbiji. Odgovori kratko i jasno na srpskom: {pitanje}"
-                    )
-                    st.info(response.text)
-                except Exception as e:
-                    if "404" in str(e):
-                        st.error("Google trenutno ne dozvoljava ovaj model. Pokušajte kasnije.")
-                    elif "429" in str(e):
-                        st.warning("Kvota je popunjena (sačekaj 60s).")
+                    res = requests.post(url, json=payload, timeout=15)
+                    data = res.json()
+                    
+                    if "candidates" in data:
+                        odgovor = data["candidates"][0]["content"]["parts"][0]["text"]
+                        st.info(odgovor)
                     else:
-                        st.error("AI trenutno nije dostupan.")
+                        # Ako Google vrati grešku, ispiši je precizno
+                        st.error(f"Google API Greška: {data.get('error', {}).get('message', 'Nepoznata greška')}")
+                except Exception as e:
+                    st.error(f"Sistemska greška: {e}")
         else:
-            st.warning("API ključ nije podešen u Secrets.")
+            st.warning("API ključ nije podešen.")
 
 # --- TVOJI TABS (Nepromenjeno) ---
 tab1, tab2, tab3 = st.tabs(["🍎 Voćarstvo", "🥦 Povrtarstvo", "📍 Moja Lokacija & Vreme"])
