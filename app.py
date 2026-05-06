@@ -68,31 +68,37 @@ with t1:
 
     st.caption("💧 Sistem kap po kap: Aktivan | 📍 Lokacija: Kruševac")
 
-    if st.button("✨ Generiši recept i plan"):
-        prompt = f"""Ti si iskusni agronom u Srbiji. Napravi plan za {moj_usev} u mesecu {mesec}.
+   if st.button("✨ Generiši recept i plan"):
+        # STROŽI PROMPT ZA KONKRETNE PREPARATE
+        prompt = f"""Ti si iskusni agronom u Srbiji. Napravi precizan plan za {moj_usev} u mesecu {mesec}.
         KONTEKST:
         - Tip gajenja: {kategorija}.
-        - Tehnologija: Sistem kap po kap (preporuči fertirigaciju).
+        - Tehnologija: Sistem kap po kap (obavezno navedi đubriva za fertirigaciju).
         - Lokacija: Kruševac (vreme: {m_info}).
-        - Specifičnost: Ako je voće, u 3. je godini (formiranje uzgojnog oblika).
+        - Starost: Ako je voće, 3. je godina.
 
-        ZAHTEV:
-        Navedi 4 ključna zadatka. Za svaki zadatak navedi konkretan naziv komercijalnog preparata ili đubriva koji se koristi u Srbiji i tačnu dozu.
-        Format: Zadatak | Detaljan savet sa dozom"""
+        ⚠️ OBAVEZNA PRAVILA ZA ODGOVOR:
+        1. Za SVAKI zadatak moraš napisati tačan naziv komercijalnog preparata ili đubriva dostupnog u Srbiji (npr. Signum, Chorus, Quadris, Ridomil, Fitofert, YaraMila, itd.).
+        2. Navedi preciznu dozu (npr. 0.2% ili 2.5 kg/ha).
+        3. Navedi razlog primene (npr. suzbijanje plamenjače, nadoknada kalcijuma).
+        4. Ne koristi uopštene termine kao 'fungicid' ili 'đubrivo' bez navođenja brenda.
 
-        with st.spinner("AI agronom analizira..."):
+        Format: Naziv zadatka | Detaljan recept: [Naziv preparata] u dozi [Doza] - [Obrazloženje]"""
+
+        with st.spinner(f"Pišem recept za {moj_usev}..."):
             try:
                 response = model.generate_content(prompt)
-                st.subheader(f"📋 Saveti za {moj_usev}:")
-                for i, linija in enumerate(response.text.strip().split('\n')):
+                st.subheader(f"📋 Personalizovani recept za {moj_usev}:")
+                
+                odgovor = response.text.strip().split('\n')
+                for i, linija in enumerate(odgovor):
                     if "|" in linija:
                         z, d = linija.split("|")
-                        with st.expander(f"📌 {z.strip()}", expanded=True):
+                        with st.expander(f"💊 {z.strip()}", expanded=True):
                             st.write(d.strip())
                             st.checkbox("Zadatak izvršen", key=f"z_{moj_usev}_{i}")
             except Exception as e:
                 st.error(f"Greška: {str(e)}")
-
 with t3:
     st.header("💬 Brzi savet")
     pitanje = st.text_input("Pitaj bilo šta (npr. 'čime prskati vaš na paprici?'):")
