@@ -10,39 +10,67 @@ st.set_page_config(page_title="AgroAsistent Srbija", layout="wide", page_icon="�
 
 # --- 2. DINAMIČKA BAZA RADOVA PO MESECIMA (TO-DO) ---
 sveobuhvatni_planovi = {
+    1: { # JANUAR
+        "Šljiva": [{"id": "slj_1_1", "zadatak": "Zimska rezidba (uklanjanje polomljenih grana)", "tip": "Radovi"}],
+        "Malina": [{"id": "mal_1_1", "zadatak": "Čišćenje snega sa protivgradnih mreža", "tip": "Radovi"}],
+        "Paradajz": [{"id": "par_1_1", "zadatak": "Nabavka semena i supstrata za rasad", "tip": "Priprema"}]
+    },
+    2: { # FEBRUAR
+        "Šljiva": [{"id": "slj_2_1", "zadatak": "Zimsko prskanje bakrom (Plavo ulje)", "tip": "Zaštita"}],
+        "Malina": [{"id": "mal_2_1", "zadatak": "Rezidba dvorodnih sorti", "tip": "Radovi"}],
+        "Paradajz": [{"id": "par_2_1", "zadatak": "Setva semena za rani rasad u toplim lejama", "tip": "Radovi"}]
+    },
+    3: { # MART
+        "Šljiva": [{"id": "slj_3_1", "zadatak": "Đubrenje NPK formulacijom (npr. 15:15:15)", "tip": "Prehrana"}],
+        "Malina": [{"id": "mal_3_1", "zadatak": "Vezivanje izdanaka za žicu", "tip": "Radovi"}],
+        "Paradajz": [{"id": "par_3_1", "zadatak": "Pikiranje rasada u saksije", "tip": "Radovi"}]
+    },
+    4: { # APRIL
+        "Šljiva": [{"id": "slj_4_1", "zadatak": "Zaštita protiv Monilije (u cvetu)", "tip": "Zaštita"}],
+        "Malina": [{"id": "mal_4_1", "zadatak": "Prvo prolećno prskanje protiv didimele", "tip": "Zaštita"}],
+        "Paradajz": [{"id": "par_4_1", "zadatak": "Priprema zemljišta i kaljenje rasada", "tip": "Priprema"}]
+    },
     5: { # MAJ
-        "Šljiva": [
-            {"id": "slj_maj_1", "zadatak": "Zaštita protiv šupljikavosti lista (Captan)", "tip": "Zaštita"},
-            {"id": "slj_maj_2", "zadatak": "Prihrana preko lista (Bor + Aminokiseline)", "tip": "Prehrana"},
-            {"id": "slj_maj_3", "zadatak": "Uklanjanje korova unutar reda", "tip": "Radovi"}
-        ],
-        "Malina": [
-            {"id": "mal_maj_1", "zadatak": "Tretman protiv didimele i rđe (Quadris)", "tip": "Zaštita"},
-            {"id": "mal_maj_2", "zadatak": "Druga prihrana KAN đubrivom", "tip": "Prehrana"},
-            {"id": "mal_maj_3", "zadatak": "Zakidanje prvih mladih izdanaka", "tip": "Radovi"}
-        ],
-        "Paradajz": [
-            {"id": "par_maj_1", "zadatak": "Preventiva plamenjače (Ridomil Gold)", "tip": "Zaštita"},
-            {"id": "par_maj_2", "zadatak": "Prihrana 20:20:20 kroz sistem", "tip": "Prehrana"},
-            {"id": "par_maj_3", "zadatak": "Zalamanje zaperaka redovno", "tip": "Radovi"}
-        ]
+        "Šljiva": [{"id": "slj_5_1", "zadatak": "Zaštita od šupljikavosti lista i vaši", "tip": "Zaštita"}],
+        "Malina": [{"id": "mal_5_1", "zadatak": "Uklanjanje prvih serija mladih izdanaka", "tip": "Radovi"}],
+        "Paradajz": [{"id": "par_5_1", "zadatak": "Rasađivanje na otvoreno polje", "tip": "Radovi"}]
     },
     6: { # JUN
-        "Šljiva": [
-            {"id": "slj_jun_1", "zadatak": "Zaštita protiv šljivine ose i smotavca", "tip": "Zaštita"},
-            {"id": "slj_jun_2", "zadatak": "Folijarna prihrana kalcijumom", "tip": "Prehrana"}
-        ],
-        "Malina": [
-            {"id": "mal_jun_1", "zadatak": "Zaštita protiv truleži ploda (Botritis)", "tip": "Zaštita"},
-            {"id": "mal_jun_2", "zadatak": "Berba i klasiranje plodova", "tip": "Radovi"}
-        ],
-        "Paradajz": [
-            {"id": "par_jun_1", "zadatak": "Vezivanje stabljika uz naslon", "tip": "Radovi"},
-            {"id": "par_jun_2", "zadatak": "Prihrana kalijumom za zrenje", "tip": "Prehrana"}
-        ]
+        "Šljiva": [{"id": "slj_6_1", "zadatak": "Zaštita protiv šljivinog smotavca", "tip": "Zaštita"}],
+        "Malina": [{"id": "mal_6_1", "zadatak": "Zaštita ploda od truleži (Botritis)", "tip": "Zaštita"}],
+        "Paradajz": [{"id": "par_6_1", "zadatak": "Zalamanje zaperaka i vezivanje", "tip": "Radovi"}]
+    },
+    7: { # JUL
+        "Šljiva": [{"id": "slj_7_1", "zadatak": "Navodnjavanje u sušnim periodima", "tip": "Radovi"}],
+        "Malina": [{"id": "mal_7_1", "zadatak": "Berba i održavanje vlažnosti", "tip": "Radovi"}],
+        "Paradajz": [{"id": "par_7_1", "zadatak": "Prihrana kalijumom za krupnoću ploda", "tip": "Prehrana"}]
+    },
+    8: { # AVGUST
+        "Šljiva": [{"id": "slj_8_1", "zadatak": "Berba ranih i srednjih sorti", "tip": "Radovi"}],
+        "Malina": [{"id": "mal_8_1", "zadatak": "Izbacivanje izdanaka koji su doneli rod", "tip": "Radovi"}],
+        "Paradajz": [{"id": "par_8_1", "zadatak": "Zaštita od plamenjače i berba", "tip": "Zaštita"}],
+    },
+    9: { # SEPTEMBAR
+        "Šljiva": [{"id": "slj_9_1", "zadatak": "Sakupljanje opalih plodova i čišćenje", "tip": "Radovi"}],
+        "Malina": [{"id": "mal_9_1", "zadatak": "Đubrenje fosforom i kalijumom", "tip": "Prehrana"}],
+        "Paradajz": [{"id": "par_9_1", "zadatak": "Sakupljanje semena starih sorti", "tip": "Radovi"}]
+    },
+    10: { # OKTOBAR
+        "Šljiva": [{"id": "slj_10_1", "zadatak": "Osnovno đubrenje stajnjakom", "tip": "Prehrana"}],
+        "Malina": [{"id": "mal_10_1", "zadatak": "Priprema naslona za zimu", "tip": "Radovi"}],
+        "Paradajz": [{"id": "par_10_1", "zadatak": "Uklanjanje biljnih ostataka iz bašte", "tip": "Radovi"}]
+    },
+    11: { # NOVEMBAR
+        "Šljiva": [{"id": "slj_11_1", "zadatak": "Jesenja sadnja novih sadnica", "tip": "Radovi"}],
+        "Malina": [{"id": "mal_11_1", "zadatak": "Plavo prskanje pre mirovanja", "tip": "Zaštita"}],
+        "Paradajz": [{"id": "par_11_1", "zadatak": "Duboko oranje ili ašovljenje", "tip": "Radovi"}]
+    },
+    12: { # DECEMBAR
+        "Šljiva": [{"id": "slj_12_1", "zadatak": "Krečenje stabala protiv mraza", "tip": "Radovi"}],
+        "Malina": [{"id": "mal_12_1", "zadatak": "Kontrola ograde oko malinjaka", "tip": "Radovi"}],
+        "Paradajz": [{"id": "par_12_1", "zadatak": "Planiranje plodoreda za sledeću godinu", "tip": "Priprema"}]
     }
 }
-
 # --- 3. INICIJALIZACIJA MEMORIJE (Za zaključavanje zadataka) ---
 if 'zavrseni_zadaci' not in st.session_state:
     st.session_state.zavrseni_zadaci = set()
