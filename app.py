@@ -47,30 +47,52 @@ with t2:
 
 with t1:
     mesec = datetime.now().strftime("%B")
-    st.header(f"Plan za {mesec}")
+    st.header(f"🌿 Pametni plan za: {mesec}")
     
-    meteo = dobij_prognozu(st.session_state.lat, st.session_state.lon)
-    m_info = f"{meteo['t']}°C, kiša {meteo['k']}mm" if meteo else "Standardno vreme"
-    if meteo: st.info(f"🌤️ Trenutno: {m_info}")
+    # --- TVOJA SPECIFIČNA LISTA USEVA ---
+    kategorija = st.radio("Izaberi kategoriju:", ["Plastenik", "Otvoreno polje", "Voćnjak (3. god)"], horizontal=True)
+    
+    if kategorija == "Plastenik":
+        moj_usev = st.selectbox("Biljka u plasteniku:", ["Paradajz", "Krastavac", "Paprika (Makedonka)"])
+    elif kategorija == "Otvoreno polje":
+        moj_usev = st.selectbox("Usev na otvorenom:", ["Krompir", "Boranija", "Grašak", "Crni i beli luk", "Lubenica", "Kukuruz šećerac"])
+    else:
+        moj_usev = st.selectbox("Voćka (70 stabala, kap-po-kap):", ["Jabuka", "Kruška", "Višnja", "Dunja", "Breskva", "Kajsija", "Trešnja", "Šljiva", "Nektarina", "Lešnik", "Orah"])
 
-    kultura = st.selectbox("Kultura:", ["Šljiva", "Malina", "Paradajz"])
+    # Dodatni parametri za AI
+    st.caption(f"Sistem: Kap po kap aktiviran | Lokacija: Kruševac")
     
-    if st.button("✨ Generiši plan"):
-        prompt = f"Ti si agronom. Kratka lista 4 zadatka za {kultura} u mesecu {mesec}. Vreme: {m_info}. Format: Zadatak | Opis"
-        with st.spinner("AI radi..."):
+    if st.button("🚀 Generiši recept i plan radova"):
+        # INSTRUKCIJA ZA AI (Podešena za Srbiju i tvoje uslove)
+        prompt = f"""Ti si stručni agronom u Srbiji. Napravi plan za {moj_usev} u mesecu {mesec}.
+        USLOVI: 
+        - Kategorija: {kategorija}.
+        - Navodnjavanje: Sistem kap po kap (obavezno navedi ako treba prihrana kroz sistem).
+        - Starost voćnjaka: 3. godina (ako je izabrano voće).
+        - Specifičnost: Paprika je sorta Makedonka (ako je izabrana).
+        - Vreme: {m_info}.
+
+        ZAHTEVI:
+        1. Navedi 4 ključna zadatka (zaštita, prihrana, nega).
+        2. Za svaki zadatak navedi KONKRETAN PREPARAT dostupan u Srbiji (npr. Signum, Quadris, Wuxal, Fitofert, itd.).
+        3. Navedi tačnu dozu (npr. 20g na 10L vode ili 2kg po hektaru).
+        4. Navedi razlog (npr. protiv plamenjače, za bolji cvet, protiv vaši).
+
+        Formatiraj strogo kao: Zadatak | Detaljan savet sa preparatom i dozom"""
+
+        with st.spinner(f"Analiziram {moj_usev}..."):
             try:
-                # Slanje upita
                 response = model.generate_content(prompt)
+                st.subheader(f"📋 Plan tretmana za {moj_usev}")
                 
-                # Prikazivanje rezultata
-                st.subheader(f"Zadaci:")
                 for i, linija in enumerate(response.text.strip().split('\n')):
                     if "|" in linija:
                         z, d = linija.split("|")
-                        st.checkbox(f"**{z.strip()}** - {d.strip()}", key=f"z_{i}")
+                        with st.expander(f"📌 {z.strip()}", expanded=True):
+                            st.write(d.strip())
+                            st.checkbox("Izvršeno", key=f"ch_{moj_usev}_{i}")
             except Exception as e:
                 st.error(f"Greška: {str(e)}")
-                st.info("Pokušajte da osvežite stranicu (Refresh).")
 
 with t3:
     pitanje = st.text_input("Pitaj:")
