@@ -12,24 +12,35 @@ def javi_se_agronomu(prompt):
         return "Greška: Ključ nije u Secrets-u!"
     
     api_key = st.secrets["GEMINI_API_KEY"]
-    # Forsiramo v1 stabilnu putanju da izbegnemo 404 grešku
-    url = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={api_key}"
+    # Promena na v1beta putanju koja dokazano radi za Free Tier ključeve
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
     
     payload = {
-        "contents": [{"parts": [{"text": prompt}]}],
-        "generationConfig": {"temperature": 0.7, "maxOutputTokens": 800}
+        "contents": [{
+            "parts": [{
+                "text": prompt + " Odgovori isključivo na srpskom jeziku, navodeći konkretne nazive preparata i doze."
+            }]
+        }],
+        "generationConfig": {
+            "temperature": 0.7,
+            "maxOutputTokens": 1000
+        }
     }
     
     try:
         response = requests.post(url, json=payload, timeout=30)
         res_data = response.json()
+        
         if response.status_code == 200:
+            # Izvlačenje teksta iz odgovora
             return res_data['candidates'][0]['content']['parts'][0]['text']
         else:
-            msg = res_data.get('error', {}).get('message', 'Nepoznata greška')
-            return f"Greška servera ({response.status_code}): {msg}"
+            # Detaljan ispis greške ako ponovo zapne
+            error_msg = res_data.get('error', {}).get('message', 'Nepoznata greška')
+            return f"Greška {response.status_code}: {error_msg}"
+            
     except Exception as e:
-        return f"Greška u vezi: {str(e)}"
+        return f"Greška u konekciji: {str(e)}"
 
 # --- 2. POMOĆNE FUNKCIJE ---
 def dobij_prognozu(lat, lon):
