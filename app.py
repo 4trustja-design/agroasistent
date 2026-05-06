@@ -8,9 +8,10 @@ from datetime import datetime
 # --- 1. KONFIGURACIJA ---
 st.set_page_config(page_title="AgroAsistent Pro", layout="wide", page_icon="🌿")
 
+# Rešavanje 404 greške forsiranjem stabilnog modela
 if "GEMINI_API_KEY" in st.secrets:
     genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
-    # Koristimo samo naziv modela, bez verzije API-ja u nazivu
+    # Koristimo direktan naziv bez models/ prefiksa ako v1beta pravi problem
     model = genai.GenerativeModel('gemini-1.5-flash')
 else:
     st.error("Podesite GEMINI_API_KEY u Secrets!")
@@ -33,7 +34,7 @@ with t2:
     st.header("📍 Lokacija imanja")
     m = folium.Map(location=[st.session_state.lat, st.session_state.lon], zoom_start=8)
     folium.LatLngPopup().add_to(m)
-    map_data = st_folium(m, height=300, width=700, key="mapa_final_fixed")
+    map_data = st_folium(m, height=300, width=700, key="mapa_final_v4")
     if map_data and map_data.get('last_clicked'):
         st.session_state.lat = map_data['last_clicked']['lat']
         st.session_state.lon = map_data['last_clicked']['lng']
@@ -56,12 +57,12 @@ with t1:
         moj_usev = st.selectbox("Voćka (70 stabala):", ["Jabuka", "Kruška", "Višnja", "Dunja", "Breskva", "Kajsija", "Trešnja", "Šljiva", "Nektarina", "Lešnik", "Orah"])
 
     if st.button("✨ Generiši recept i plan", type="primary"):
-        # Prompt je sada još agresivniji u zahtevanju brendova
+        # STROGI PROMPT ZA PREPARATE
         prompt = f"""Ti si stručni agronom u Srbiji. Napravi precizan plan za {moj_usev} u mesecu {mesec}.
         Lokacija: Kruševac. Navodnjavanje: Kap po kap.
         
-        OBAVEZNO ZA SVAKI OD 4 ZADATKA:
-        1. Napisat tačan komercijalni naziv preparata (npr. Signum, Chorus, Quadris, Ridomil, Fitofert 20:20:20, itd.).
+        ⚠️ OBAVEZNO ZA SVAKI OD 4 ZADATKA:
+        1. Napisati TAČAN komercijalni naziv preparata dostupan u Srbiji (npr. Signum, Chorus, Quadris, Ridomil, Fitofert, YaraMila, itd.).
         2. Napisati preciznu dozu (npr. 25ml na 10L vode ili 2kg/ha).
         3. Napisati razlog primene.
         
@@ -69,7 +70,7 @@ with t1:
 
         with st.spinner("AI agronom kreira recepte..."):
             try:
-                # Direktno generisanje bez ListModels da bismo izbegli 404
+                # Pokušaj generisanja sa primarnim modelom
                 response = model.generate_content(prompt)
                 st.subheader(f"📋 Recepti za {moj_usev}:")
                 
@@ -79,20 +80,28 @@ with t1:
                         z, d = linija.split("|")
                         with st.expander(f"💊 {z.strip()}", expanded=True):
                             st.write(d.strip())
-                            st.checkbox("Izvršeno", key=f"c_{moj_usev}_{i}")
+                            st.checkbox("Zadatak izvršen", key=f"c_{moj_usev}_{i}")
             except Exception as e:
-                # Ako 1.5-flash i dalje pravi problem, automatski prebaci na gemini-pro
+                # Backup plan ako 1.5-flash i dalje baca 404
                 try:
-                    model_backup = genai.GenerativeModel('gemini-pro')
-                    response = model_backup.generate_content(prompt)
-                    st.success("Korišćen rezervni model.")
-                    # (Ponavljanje logike prikaza...)
+                    model_alt = genai.GenerativeModel('gemini-pro')
+                    response = model_alt.generate_content(prompt)
+                    st.success("Korišćen stabilni Gemini-Pro model.")
+                    # Ponavljanje logike prikaza ovde radi sigurnosti
+                    linije = response.text.strip().split('\n')
+                    for i, linija in enumerate(linije):
+                        if "|" in linija:
+                            z, d = linija.split("|")
+                            with st.expander(f"💊 {z.strip()}", expanded=True):
+                                st.write(d.strip())
                 except:
-                    st.error(f"Sistemski problem: {str(e)}")
+                    st.error("Greška u povezivanju sa Google serverom. Proverite API ključ.")
 
 with t3:
     st.header("💬 Chat sa agronomom")
     upit = st.text_input("Pitaj:")
     if st.button("Pošalji"):
-        res = model.generate_content(upit)
-        st.write(res.text)
+        try:
+            res = model.generate_content(upit)
+            st.write(res.text)
+        except: st.error("AI trenutno nije dostupan.")
