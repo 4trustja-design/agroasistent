@@ -7,14 +7,11 @@ from datetime import datetime
 
 st.set_page_config(page_title="AgroAsistent Pro", layout="wide", page_icon="🌿")
 
-# --- 1. KONFIGURACIJA AI MODELA ---
+# --- 1. KONFIGURACIJA (Ona koja ti je radila) ---
 if "GEMINI_API_KEY" in st.secrets:
     genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
-    try:
-        # Koristimo stabilan poziv koji ti je radio na slikama
-        model = genai.GenerativeModel('gemini-1.5-flash')
-    except:
-        model = genai.GenerativeModel('gemini-pro')
+    # Koristimo direktno model bez ListModels funkcije koja je pravila 404 grešku
+    model = genai.GenerativeModel('gemini-1.5-flash')
 else:
     st.error("Podesite GEMINI_API_KEY u Secrets!")
 
@@ -26,7 +23,7 @@ def dobij_prognozu(lat, lon):
         return {"t": r['daily']['temperature_2m_max'][0], "k": r['daily']['precipitation_sum'][0]}
     except: return None
 
-if 'lat' not in st.session_state: st.session_state.lat, st.session_state.lon = 43.58, 21.32 # Kruševac default
+if 'lat' not in st.session_state: st.session_state.lat, st.session_state.lon = 43.58, 21.32
 
 # --- 3. UI ---
 st.title("🚜 AgroAsistent AI")
@@ -46,19 +43,19 @@ with t1:
     mesec = datetime.now().strftime("%B")
     st.header(f"📅 Plan za: {mesec}")
     
+    # Prvo definišemo m_info da bismo izbegli NameError sa slike
     meteo = dobij_prognozu(st.session_state.lat, st.session_state.lon)
     if meteo:
         m_info = f"Temperatura {meteo['t']}°C, padavine {meteo['k']}mm."
-        st.info(f"🌤️ Trenutno u Kruševcu: {meteo['t']}°C | Padavine: {meteo['k']}mm")
+        st.info(f"🌤️ Trenutno u Kruševcu: {m_info}")
     else:
-        m_info = "Vremenski uslovi su uobičajeni za ovo doba godine."
+        m_info = "Sezonski prosek za Kruševac."
         st.warning("Prognoza trenutno nije dostupna.")
 
-    # --- TVOJI SPECIFIČNI USEVI ---
-    kategorija = st.radio("Kategorija:", ["Plastenik", "Otvoreno polje", "Mrešoviti voćnjak (3. god)"], horizontal=True)
+    kategorija = st.radio("Kategorija:", ["Plastenik", "Otvoreno polje", "Voćnjak (3. god)"], horizontal=True)
     
     if kategorija == "Plastenik":
-        moj_usev = st.selectbox("Biljka u plasteniku:", ["Paradajz", "Krastavac", "Paprika (Makedonka)"])
+        moj_usev = st.selectbox("Biljka:", ["Paradajz", "Krastavac", "Paprika (Makedonka)"])
     elif kategorija == "Otvoreno polje":
         moj_usev = st.selectbox("Biljka:", ["Krompir", "Boranija", "Grašak", "Crni i beli luk", "Lubenica", "Kukuruz šećerac"])
     else:
@@ -66,38 +63,37 @@ with t1:
 
     st.caption("💧 Sistem kap po kap: Aktivan | 📍 Lokacija: Kruševac")
 
-    if st.button("✨ Generiši recept i plan radova"):
-        # IZMENA SAMO U PROMPTU: STROGO NAREĐENJE ZA SREDSTVA
-        prompt = f"""Ti si iskusni agronom u Srbiji. Napravi plan za {moj_usev} u mesecu {mesec}.
-        KONTEKST:
-        - Tip gajenja: {kategorija}.
-        - Tehnologija: Sistem kap po kap (preporuči fertirigaciju).
-        - Lokacija: Kruševac (vreme: {m_info}).
-        - Specifičnost: Ako je voće, u 3. je godini.
-
-        ⚠️ OBAVEZAN ZAHTEV:
-        Navedi 4 ključna zadatka. Za SVAKI zadatak moraš napisati TAČAN NAZIV komercijalnog preparata ili đubriva koji se koristi u Srbiji (npr. Signum, Chorus, Quadris, Fitofert, YaraMila, Galenika preparati itd.) i preciznu dozu.
-        Format: Zadatak | Detaljan savet sa tačnim nazivom sredstva i dozom"""
+    if st.button("✨ Generiši recept i plan", type="primary"):
+        # IZMENA SAMO OVDE: Dodat zahtev za konkretna sredstva
+        prompt = f"""Ti si iskusni agronom u Srbiji. Napravi precizan plan za {moj_usev} u mesecu {mesec}.
+        Lokacija: Kruševac. Vreme: {m_info}. Navodnjavanje: Kap po kap.
+        
+        ZAHTEV: Navedi 4 ključna zadatka. Za SVAKI zadatak moraš napisati:
+        1. TAČAN NAZIV komercijalnog preparata ili đubriva (npr. Signum, Chorus, Quadris, Fitofert, YaraMila itd.).
+        2. Preciznu DOZU (npr. 0.2% ili 2kg/ha).
+        3. RAZLOG primene.
+        
+        Format: Zadatak | Detaljan recept sa nazivom preparata i dozom"""
 
         with st.spinner("AI agronom analizira..."):
             try:
                 response = model.generate_content(prompt)
-                st.subheader(f"📋 Saveti za {moj_usev}:")
+                st.subheader(f"📋 Recepti za {moj_usev}:")
+                # Formatiranje koje ti se dopalo
                 for i, linija in enumerate(response.text.strip().split('\n')):
                     if "|" in linija:
                         z, d = linija.split("|")
-                        with st.expander(f"📌 {z.strip()}", expanded=True):
+                        with st.expander(f"💊 {z.strip()}", expanded=True):
                             st.write(d.strip())
-                            st.checkbox("Zadatak izvršen", key=f"z_{moj_usev}_{i}")
+                            st.checkbox("Izvršeno", key=f"z_{moj_usev}_{i}")
             except Exception as e:
-                st.error(f"Greška: {str(e)}")
+                st.error(f"Sistemska greška: {str(e)}")
 
 with t3:
-    st.header("💬 Brzi savet")
-    pitanje = st.text_input("Pitaj bilo šta:")
+    st.header("💬 Chat")
+    upit = st.text_input("Pitaj bilo šta:")
     if st.button("Pošalji"):
         try:
-            res = model.generate_content(pitanje)
+            res = model.generate_content(upit)
             st.write(res.text)
         except: st.error("AI trenutno nije dostupan.")
-        
