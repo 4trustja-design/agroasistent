@@ -11,11 +11,10 @@ st.set_page_config(page_title="AgroAsistent Pro", layout="wide", page_icon="🌿
 if "GEMINI_API_KEY" in st.secrets:
     genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
     try:
-        available_models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
-        model_name = available_models[0] if available_models else "gemini-1.5-flash"
-        model = genai.GenerativeModel(model_name)
-    except:
+        # Pokušavamo da dohvatimo model koji ti je dokazano radio na slikama
         model = genai.GenerativeModel('gemini-1.5-flash')
+    except:
+        model = genai.GenerativeModel('gemini-pro')
 else:
     st.error("Podesite GEMINI_API_KEY u Secrets!")
 
@@ -27,7 +26,7 @@ def dobij_prognozu(lat, lon):
         return {"t": r['daily']['temperature_2m_max'][0], "k": r['daily']['precipitation_sum'][0]}
     except: return None
 
-if 'lat' not in st.session_state: st.session_state.lat, st.session_state.lon = 43.58, 21.32 # Kruševac default
+if 'lat' not in st.session_state: st.session_state.lat, st.session_state.lon = 43.58, 21.32 # Kruševac
 
 # --- 3. UI ---
 st.title("🚜 AgroAsistent AI")
@@ -47,16 +46,14 @@ with t1:
     mesec = datetime.now().strftime("%B")
     st.header(f"📅 Plan za: {mesec}")
     
-    # METEO PODACI SA FIX-OM ZA m_info
     meteo = dobij_prognozu(st.session_state.lat, st.session_state.lon)
     if meteo:
         m_info = f"Temperatura {meteo['t']}°C, padavine {meteo['k']}mm."
         st.info(f"🌤️ Trenutno u Kruševcu: {meteo['t']}°C | Padavine: {meteo['k']}mm")
     else:
         m_info = "Vremenski uslovi su uobičajeni za ovo doba godine."
-        st.warning("Prognoza trenutno nije dostupna, koristi se sezonski prosek.")
+        st.warning("Prognoza trenutno nije dostupna.")
 
-    # --- TVOJI SPECIFIČNI USEVI ---
     kategorija = st.radio("Kategorija:", ["Plastenik", "Otvoreno polje", "Mrešoviti voćnjak (3. god)"], horizontal=True)
     
     if kategorija == "Plastenik":
@@ -68,22 +65,26 @@ with t1:
 
     st.caption("💧 Sistem kap po kap: Aktivan | 📍 Lokacija: Kruševac")
 
-    if st.button("✨ Generiši recept i plan"):
+    if st.button("✨ Generiši recept i plan", type="primary"):
+        # POBOLJŠAN PROMPT ZA BRENDOVE PREPARATA
         prompt = f"""Ti si iskusni agronom u Srbiji. Napravi plan za {moj_usev} u mesecu {mesec}.
         KONTEKST:
         - Tip gajenja: {kategorija}.
-        - Tehnologija: Sistem kap po kap (preporuči fertirigaciju).
+        - Tehnologija: Sistem kap po kap.
         - Lokacija: Kruševac (vreme: {m_info}).
-        - Specifičnost: Ako je voće, u 3. je godini (formiranje uzgojnog oblika).
+        - Starost: Ako je voće, u 3. je godini.
 
-        ZAHTEV:
-        Navedi 4 ključna zadatka. Za svaki zadatak navedi konkretan naziv komercijalnog preparata ili đubriva koji se koristi u Srbiji i tačnu dozu.
-        Format: Zadatak | Detaljan savet sa dozom"""
+        ⚠️ STROGA PRAVILA ZA ODGOVOR:
+        1. Za svaki zadatak MORAŠ navesti tačan naziv komercijalnog preparata ili đubriva koji se prodaje u poljoprivrednim apotekama u Srbiji (npr. Signum, Quadris, Fitofert, Yara, itd.).
+        2. Navedi preciznu dozu (npr. 0.25% ili 2 kg po hektaru).
+        3. Ne koristi uopštene termine kao što su 'fungicid' ili 'azotno đubrivo' bez navođenja konkretnog proizvoda.
 
-        with st.spinner("AI agronom analizira..."):
+        Format: Naziv zadatka | Detaljan recept: [Naziv preparata] u dozi [Doza] - [Kratko obrazloženje]"""
+
+        with st.spinner("AI agronom sastavlja recepte..."):
             try:
                 response = model.generate_content(prompt)
-                st.subheader(f"📋 Saveti za {moj_usev}:")
+                st.subheader(f"💊 Recepti i zadaci za {moj_usev}:")
                 for i, linija in enumerate(response.text.strip().split('\n')):
                     if "|" in linija:
                         z, d = linija.split("|")
@@ -95,9 +96,9 @@ with t1:
 
 with t3:
     st.header("💬 Brzi savet")
-    pitanje = st.text_input("Pitaj bilo šta (npr. 'čime prskati vaš na paprici?'):")
+    pitanje = st.text_input("Pitaj bilo šta:")
     if st.button("Pošalji"):
         try:
-            res = model.generate_content(pitanje)
+            res = model.generate_content(f"Kao agronom odgovori kratko: {pitanje}")
             st.write(res.text)
         except: st.error("AI trenutno nije dostupan.")
