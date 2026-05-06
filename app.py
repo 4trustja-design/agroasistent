@@ -1,95 +1,91 @@
 import streamlit as st
-import pandas as pd
+import google.generativeai as genai
 import folium
 from streamlit_folium import st_folium
 import requests
 from datetime import datetime
 
-# --- 1. KONFIGURACIJA ---
-st.set_page_config(page_title="AgroAsistent AI Pro", layout="wide", page_icon="🤖")
+# --- 1. POSTAVKE ---
+st.set_page_config(page_title="AgroAsistent AI Pro", layout="wide")
 
-MESECI_NAZIVI = {1:"Januar", 2:"Februar", 3:"Mart", 4:"April", 5:"Maj", 6:"Jun", 
-                 7:"Jul", 8:"Avgust", 9:"Septembar", 10:"Oktobar", 11:"Novembar", 12:"Decembar"}
+# --- 2. KONFIGURACIJA AI MODELA ---
+if "GEMINI_API_KEY" in st.secrets:
+    genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+    model = genai.GenerativeModel('gemini-1.5-flash')
+else:
+    st.error("KLJUČ NIJE PRONAĐEN U SECRETS!")
 
-# --- 2. POMOĆNE FUNKCIJE ---
+# --- 3. POMOĆNE FUNKCIJE ---
 def dobij_prognozu(lat, lon):
     url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current_weather=true&daily=temperature_2m_max,temperature_2m_min,precipitation_sum&timezone=auto"
     try:
         r = requests.get(url, timeout=10).json()
         return {
             "max_t": r['daily']['temperature_2m_max'][0],
-            "min_t": r['daily']['temperature_2m_min'][0],
             "kisa": r['daily']['precipitation_sum'][0]
         }
-    except:
-        return None
+    except: return None
 
-# --- 3. SESSION STATE ---
+# --- 4. SESSION STATE ---
 if 'lat' not in st.session_state:
     st.session_state.lat, st.session_state.lon = 44.01, 21.00
 
-# --- 4. GLAVNI INTERFEJS ---
-st.title("🚜 AgroAsistent AI: Pametni Agronom")
-tabs = st.tabs(["📋 AI Planer", "📍 Lokacija", "🍎 Voćarstvo", "🥦 Povrtarstvo", "💬 AI Chat"])
+# --- 5. UI ---
+st.title("🚜 AgroAsistent AI")
+tabs = st.tabs(["📋 AI Planer", "📍 Lokacija", "🍎 Voćarstvo", "💬 AI Chat"])
 
-# --- TAB 1: LOKACIJA ---
-with tabs[1]:
-    st.header("📍 Podesi lokaciju imanja")
+with tabs[1]: # LOKACIJA
+    st.header("📍 Lokacija")
     m = folium.Map(location=[st.session_state.lat, st.session_state.lon], zoom_start=7)
     folium.LatLngPopup().add_to(m)
-    map_data = st_folium(m, height=350, width=800, key="mapa_finalna")
+    map_data = st_folium(m, height=350, width=800, key="mapa_v11")
     if map_data and map_data.get('last_clicked'):
         st.session_state.lat = map_data['last_clicked']['lat']
         st.session_state.lon = map_data['last_clicked']['lng']
-        st.success("Lokacija ažurirana!")
+        st.success("Lokacija sačuvana!")
 
-# --- TAB 0: AI DINAMIČKI PLANER ---
-with tabs[0]:
-    trenutni_mesec = datetime.now().month
-    naziv_meseca = MESECI_NAZIVI[trenutni_mesec]
-    st.header(f"📅 Planer za {naziv_meseca}")
+with tabs[0]: # PLANER
+    meseci = {1:"Januar",2:"Februar",3:"Mart",4:"April",5:"Maj",6:"Jun",7:"Jul",8:"Avgust",9:"Septembar",10:"Oktobar",11:"Novembar",12:"Decembar"}
+    mesec_naziv = meseci[datetime.now().month]
+    
+    st.header(f"📅 Planer za {mesec_naziv}")
     
     meteo = dobij_prognozu(st.session_state.lat, st.session_state.lon)
-    meteo_tekst = "Vreme je uobičajeno."
+    meteo_info = "Vreme je uobičajeno."
     if meteo:
-        st.info(f"🌤️ Prognoza: Max {meteo['max_t']}°C | Padavine {meteo['kisa']}mm")
-        meteo_tekst = f"Temperatura {meteo['max_t']} stepeni, padavine {meteo['kisa']}mm."
+        st.info(f"🌤️ Max: {meteo['max_t']}°C | Kiša: {meteo['kisa']}mm")
+        meteo_info = f"Temperatura {meteo['max_t']}C, padavine {meteo['kisa']}mm."
 
-    kultura = st.selectbox("Izaberi kulturu:", ["Šljiva", "Malina", "Jabuka", "Paradajz", "Paprika"])
+    kultura = st.selectbox("Kultura:", ["Šljiva", "Malina", "Paradajz", "Paprika"])
 
-    if st.button(f"✨ Generiši stručni plan", type="primary"):
-        if "GEMINI_API_KEY" in st.secrets:
-            api_key = st.secrets["GEMINI_API_KEY"]
-            url = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={api_key}"
-            
-            prompt = f"Ti si agronom u Srbiji. Napravi plan za {kultura} u mesecu {naziv_meseca}. Vreme: {meteo_tekst}. Navedi 4 zadatka sa preparatima. Format: Zadatak | Opis"
-            payload = {"contents": [{"parts": [{"text": prompt}]}]}
-            
-            with st.spinner("AI analizira..."):
-                try:
-                    res = requests.post(url, json=payload, timeout=20)
-                    data = res.json()
-                    if "candidates" in data:
-                        odgovor = data["candidates"][0]["content"]["parts"][0]["text"]
-                        st.subheader(f"✅ Zadaci za {kultura}:")
-                        for i, linija in enumerate(odgovor.strip().split('\n')):
-                            if "|" in linija:
-                                zadatak, detalj = linija.split("|")
-                                col_c, col_t = st.columns([1, 10])
-                                with col_c: st.checkbox("", key=f"ai_task_{i}")
-                                with col_t: st.markdown(f"**{zadatak.strip()}** - {detalj.strip()}")
-                    else:
-                        st.error("Problem sa API ključem ili kvotom.")
-                except:
-                    st.error("Greška u povezivanju.")
-        else:
-            st.warning("Dodajte GEMINI_API_KEY u Secrets.")
+    if st.button("✨ Generiši AI plan", type="primary"):
+        prompt = f"Ti si agronom. Napravi plan za {kultura} u Srbiji za mesec {mesec_naziv}. Vreme: {meteo_info}. Navedi 4 zadatka sa preparatima. Format: Zadatak | Opis i preparat"
+        
+        with st.spinner("AI razmišlja..."):
+            try:
+                # Zvanična metoda koja je najsigurnija
+                response = model.generate_content(prompt)
+                tekst = response.text
+                
+                st.subheader(f"✅ Zadaci za {kultura}:")
+                for i, linija in enumerate(tekst.strip().split('\n')):
+                    if "|" in linija:
+                        zadatak, detalj = linija.split("|")
+                        c1, c2 = st.columns([1, 10])
+                        with c1: st.checkbox("", key=f"t_{kultura}_{i}")
+                        with c2: st.markdown(f"**{zadatak.strip()}** - {detalj.strip()}")
+            except Exception as e:
+                st.error(f"AI Greška: {str(e)}")
+                st.info("Savet: Proverite da li je API ključ u AI Studiju označen kao aktivan.")
 
-# --- OSTALI TABOVI ---
-with tabs[2]: st.write("Saveti za voće u pripremi...")
-with tabs[3]: st.write("Saveti za povrće u pripremi...")
-with tabs[4]: 
-    st.header("💬 AI Chat")
-    pitanje = st.text_input("Pitaj agronoma:")
+with tabs[3]: # CHAT
+    st.header("💬 Pitaj agronoma")
+    pitanje = st.text_input("Tvoje pitanje:")
     if st.button("Pošalji"):
-        st.write("AI odgovor će se pojaviti ovde.")
+        if pitanje:
+            try:
+                res = model.generate_content(f"Kratko odgovori: {pitanje}")
+                st.info(res.text)
+            except: st.error("AI trenutno ne odgovara.")
+
+with tabs[2]: st.write("Katalog voća u pripremi...")
