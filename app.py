@@ -5,25 +5,21 @@ from streamlit_folium import st_folium
 import requests
 from datetime import datetime
 
-st.set_page_config(page_title="AgroAsistent Pro", layout="wide")
+st.set_page_config(page_title="AgroAsistent Pro", layout="wide", page_icon="🌿")
 
-# --- 1. PAMETNA KONFIGURACIJA MODELA ---
+# --- 1. KONFIGURACIJA AI MODELA ---
 if "GEMINI_API_KEY" in st.secrets:
     genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
-    
-    # Pokušavamo da nađemo bilo koji dostupan model na tvom nalogu
     try:
         available_models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
-        # Biramo prvi dostupan (obično gemini-1.5-flash ili gemini-pro)
-        model_name = available_models[0] if available_models else "models/gemini-pro"
+        model_name = available_models[0] if available_models else "gemini-1.5-flash"
         model = genai.GenerativeModel(model_name)
     except:
-        # Ako list_models zakaže, idemo na najsigurniju varijantu bez 'models/' prefiksa
         model = genai.GenerativeModel('gemini-1.5-flash')
 else:
     st.error("Podesite GEMINI_API_KEY u Secrets!")
 
-# --- 2. FUNKCIJE ---
+# --- 2. POMOĆNE FUNKCIJE ---
 def dobij_prognozu(lat, lon):
     url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current_weather=true&daily=temperature_2m_max,precipitation_sum&timezone=auto"
     try:
@@ -31,73 +27,77 @@ def dobij_prognozu(lat, lon):
         return {"t": r['daily']['temperature_2m_max'][0], "k": r['daily']['precipitation_sum'][0]}
     except: return None
 
-if 'lat' not in st.session_state: st.session_state.lat, st.session_state.lon = 44.01, 21.00
+if 'lat' not in st.session_state: st.session_state.lat, st.session_state.lon = 43.58, 21.32 # Kruševac default
 
 # --- 3. UI ---
 st.title("🚜 AgroAsistent AI")
-t1, t2, t3 = st.tabs(["📋 Planer", "📍 Lokacija", "💬 Chat"])
+t1, t2, t3 = st.tabs(["📋 Pametni Planer", "📍 Lokacija", "💬 Chat"])
 
 with t2:
-    m = folium.Map(location=[st.session_state.lat, st.session_state.lon], zoom_start=7)
+    st.header("📍 Lokacija imanja")
+    m = folium.Map(location=[st.session_state.lat, st.session_state.lon], zoom_start=8)
     folium.LatLngPopup().add_to(m)
-    map_data = st_folium(m, height=300, width=700, key="mapa")
+    map_data = st_folium(m, height=300, width=700, key="mapa_final")
     if map_data and map_data.get('last_clicked'):
         st.session_state.lat = map_data['last_clicked']['lat']
         st.session_state.lon = map_data['last_clicked']['lng']
+        st.rerun()
 
 with t1:
     mesec = datetime.now().strftime("%B")
-    st.header(f"🌿 Pametni plan za: {mesec}")
+    st.header(f"📅 Plan za: {mesec}")
     
-    # --- TVOJA SPECIFIČNA LISTA USEVA ---
-    kategorija = st.radio("Izaberi kategoriju:", ["Plastenik", "Otvoreno polje", "Voćnjak (3. god)"], horizontal=True)
+    # METEO PODACI SA FIX-OM ZA m_info
+    meteo = dobij_prognozu(st.session_state.lat, st.session_state.lon)
+    if meteo:
+        m_info = f"Temperatura {meteo['t']}°C, padavine {meteo['k']}mm."
+        st.info(f"🌤️ Trenutno u Kruševcu: {meteo['t']}°C | Padavine: {meteo['k']}mm")
+    else:
+        m_info = "Vremenski uslovi su uobičajeni za ovo doba godine."
+        st.warning("Prognoza trenutno nije dostupna, koristi se sezonski prosek.")
+
+    # --- TVOJI SPECIFIČNI USEVI ---
+    kategorija = st.radio("Kategorija:", ["Plastenik", "Otvoreno polje", "Mrešoviti voćnjak (3. god)"], horizontal=True)
     
     if kategorija == "Plastenik":
-        moj_usev = st.selectbox("Biljka u plasteniku:", ["Paradajz", "Krastavac", "Paprika (Makedonka)"])
+        moj_usev = st.selectbox("Biljka:", ["Paradajz", "Krastavac", "Paprika (Makedonka)"])
     elif kategorija == "Otvoreno polje":
-        moj_usev = st.selectbox("Usev na otvorenom:", ["Krompir", "Boranija", "Grašak", "Crni i beli luk", "Lubenica", "Kukuruz šećerac"])
+        moj_usev = st.selectbox("Biljka:", ["Krompir", "Boranija", "Grašak", "Crni i beli luk", "Lubenica", "Kukuruz šećerac"])
     else:
-        moj_usev = st.selectbox("Voćka (70 stabala, kap-po-kap):", ["Jabuka", "Kruška", "Višnja", "Dunja", "Breskva", "Kajsija", "Trešnja", "Šljiva", "Nektarina", "Lešnik", "Orah"])
+        moj_usev = st.selectbox("Voćka (70 stabala):", ["Jabuka", "Kruška", "Višnja", "Dunja", "Breskva", "Kajsija", "Trešnja", "Šljiva", "Nektarina", "Lešnik", "Orah"])
 
-    # Dodatni parametri za AI
-    st.caption(f"Sistem: Kap po kap aktiviran | Lokacija: Kruševac")
-    
-    if st.button("🚀 Generiši recept i plan radova"):
-        # INSTRUKCIJA ZA AI (Podešena za Srbiju i tvoje uslove)
-        prompt = f"""Ti si stručni agronom u Srbiji. Napravi plan za {moj_usev} u mesecu {mesec}.
-        USLOVI: 
-        - Kategorija: {kategorija}.
-        - Navodnjavanje: Sistem kap po kap (obavezno navedi ako treba prihrana kroz sistem).
-        - Starost voćnjaka: 3. godina (ako je izabrano voće).
-        - Specifičnost: Paprika je sorta Makedonka (ako je izabrana).
-        - Vreme: {m_info}.
+    st.caption("💧 Sistem kap po kap: Aktivan | 📍 Lokacija: Kruševac")
 
-        ZAHTEVI:
-        1. Navedi 4 ključna zadatka (zaštita, prihrana, nega).
-        2. Za svaki zadatak navedi KONKRETAN PREPARAT dostupan u Srbiji (npr. Signum, Quadris, Wuxal, Fitofert, itd.).
-        3. Navedi tačnu dozu (npr. 20g na 10L vode ili 2kg po hektaru).
-        4. Navedi razlog (npr. protiv plamenjače, za bolji cvet, protiv vaši).
+    if st.button("✨ Generiši recept i plan"):
+        prompt = f"""Ti si iskusni agronom u Srbiji. Napravi plan za {moj_usev} u mesecu {mesec}.
+        KONTEKST:
+        - Tip gajenja: {kategorija}.
+        - Tehnologija: Sistem kap po kap (preporuči fertirigaciju).
+        - Lokacija: Kruševac (vreme: {m_info}).
+        - Specifičnost: Ako je voće, u 3. je godini (formiranje uzgojnog oblika).
 
-        Formatiraj strogo kao: Zadatak | Detaljan savet sa preparatom i dozom"""
+        ZAHTEV:
+        Navedi 4 ključna zadatka. Za svaki zadatak navedi konkretan naziv komercijalnog preparata ili đubriva koji se koristi u Srbiji i tačnu dozu.
+        Format: Zadatak | Detaljan savet sa dozom"""
 
-        with st.spinner(f"Analiziram {moj_usev}..."):
+        with st.spinner("AI agronom analizira..."):
             try:
                 response = model.generate_content(prompt)
-                st.subheader(f"📋 Plan tretmana za {moj_usev}")
-                
+                st.subheader(f"📋 Saveti za {moj_usev}:")
                 for i, linija in enumerate(response.text.strip().split('\n')):
                     if "|" in linija:
                         z, d = linija.split("|")
                         with st.expander(f"📌 {z.strip()}", expanded=True):
                             st.write(d.strip())
-                            st.checkbox("Izvršeno", key=f"ch_{moj_usev}_{i}")
+                            st.checkbox("Zadatak izvršen", key=f"z_{moj_usev}_{i}")
             except Exception as e:
                 st.error(f"Greška: {str(e)}")
 
 with t3:
-    pitanje = st.text_input("Pitaj:")
+    st.header("💬 Brzi savet")
+    pitanje = st.text_input("Pitaj bilo šta (npr. 'čime prskati vaš na paprici?'):")
     if st.button("Pošalji"):
         try:
             res = model.generate_content(pitanje)
             st.write(res.text)
-        except: st.error("AI nedostupan.")
+        except: st.error("AI trenutno nije dostupan.")
