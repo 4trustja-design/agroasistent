@@ -11,14 +11,11 @@ import requests
 st.set_page_config(page_title="AgroAsistent Pro", layout="wide", page_icon="🌾")
 
 # Povezivanje sa Google tabelom
-conn = st.connection("gsheets", type=GSheetsConnection)
-
 def trajno_zapisi(akcija, status):
     try:
-        # Čitanje postojećih podataka
-        df = conn.read(worksheet="Лист1", ttl=0)
+        # Čitamo tab koji se sada zove "Baza"
+        df = conn.read(worksheet="Baza", ttl=0)
         
-        # Pravljenje novog reda sa ispravljenim nazivom kolone
         novi_red = pd.DataFrame([{
             "Vremenska_oznaka": datetime.now().strftime("%d.%m.%Y %H:%M"),
             "Korisnik": "Agronom",
@@ -26,16 +23,24 @@ def trajno_zapisi(akcija, status):
             "Status": status
         }])
         
-        # Spajanje podataka
         ažurirano = pd.concat([df, novi_red], ignore_index=True)
         
-        # Slanje na Google Drive
-        conn.update(worksheet="Лист1", data=ažurirano)
-        st.toast(f"✅ Sačuvano: {akcija}")
+        # Šaljemo nazad u tab "Baza"
+        conn.update(worksheet="Baza", data=ažurirano)
+        st.toast(f"✅ Sačuvano u bazu!")
     except Exception as e:
-        st.error(f"Problem pri upisu (proveri naslove kolona): {e}")
+        st.error(f"Greška: Promeni ime taba u Google tabeli iz 'Лист1' u 'Baza'. Detalji: {e}")
 
-st.title("🌾 AgroAsistent: Trajni Digitalni Dnevnik")
+# --- Na dnu koda gde je prikaz istorije, promeni i tu ime taba ---
+st.markdown("---")
+st.subheader("📓 Istorija (Uživo iz Google Tabele)")
+try:
+    prikaz_df = conn.read(worksheet="Baza", ttl=0) # PROMENJENO U Baza
+    prikaz_df = prikaz_df.dropna(how='all')
+    st.dataframe(prikaz_df.tail(15), use_container_width=True)
+except:
+    st.info("Podaci će se pojaviti kada tab u Google tabeli nazoveš 'Baza'.")
+
 
 # 2. BOČNI MENI
 with st.sidebar:
