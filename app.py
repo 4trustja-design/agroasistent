@@ -74,14 +74,14 @@ with tab2:
             st.session_state.dnevnik.append({"Datum": datetime.now().strftime("%d.%m."), "Kultura": f"{kultura} ({tip})", "Radovi": ", ".join(p_rad)})
             st.success("Dodato u digitalnu knjigu!")
 
-# --- TAB 3: MAPA I METEO ALARM (ZADNJI POKUŠAJ REŠENJA) ---
+# --- TAB 3: MAPA I METEO ALARM (FIX ZA LINK) ---
 with tab3:
     st.header("📍 Pametni Alarm za prskanje")
     st.write("Kliknite na mapu da vidite prognozu:")
     
     m = folium.Map(location=[44.0165, 21.0059], zoom_start=7)
     folium.LatLngPopup().add_to(m)
-    izlaz_mape = st_folium(m, width=700, height=400, key="agro_mapa_v10")
+    izlaz_mape = st_folium(m, width=700, height=400, key="agro_mapa_final_v11")
 
     if izlaz_mape and izlaz_mape.get('last_clicked'):
         lat = round(izlaz_mape['last_clicked']['lat'], 4)
@@ -91,31 +91,39 @@ with tab3:
             st.warning("⚠️ Prvo unesite ključ u meni levo.")
         else:
             try:
-                # OČIŠĆEN KLJUČ - uklanjamo sve što nije slovo ili broj
+                # 1. Čistimo ključ od svega što nisu slova i brojevi
                 cist_kljuc = "".join(filter(str.isalnum, meteo_key))
                 
-                # KORISTIMO OBIČAN HTTP ZA ZAOBILAŽENJE SSL GREŠAKA
-                url = f"http://openweathermap.org{lat}&lon={lon}&appid={cist_kljuc}&units=metric&lang=sr"
+                # 2. DEFINIŠEMO ADRESU I PARAMETRE ODVOJENO (ovo sprečava lepljenje)
+                url_baza = "http://openweathermap.org"
+                parametri = {
+                    "lat": lat,
+                    "lon": lon,
+                    "appid": cist_kljuc,
+                    "units": "metric",
+                    "lang": "sr"
+                }
                 
-                response = requests.get(url, timeout=15)
+                # 3. Šaljemo zahtev (requests će sam pravilno spojiti ?lat=...&lon=...)
+                response = requests.get(url_baza, params=parametri, timeout=15)
                 
                 if response.status_code == 200:
                     podaci = response.json()
                     t = podaci['main']['temp']
                     v = podaci['main']['humidity']
-                    st.success(f"Lokacija: {lat}, {lon}")
-                    st.metric("Vlažnost", f"{v}%")
-                    st.metric("Temperatura", f"{t}°C")
+                    st.success(f"📍 Lokacija: {lat}, {lon}")
+                    col1, col2 = st.columns(2)
+                    col1.metric("Vlažnost", f"{v}%")
+                    col2.metric("Temperatura", f"{t}°C")
                     
                     if v > 80:
                         st.error("🚨 **ALARM:** Uslovi za plamenjaču! Poprskaj čim se list osuši!")
                     else:
                         st.success("✅ Uslovi su stabilni.")
                 else:
-                    st.error(f"Server odgovara sa greškom {response.status_code}. Proveri ključ.")
+                    st.error(f"Server javlja grešku (Kod {response.status_code}). Proveri ključ.")
             except Exception as e:
-                # Ako i ovo ne uspe, ispisaće nam TAČAN uzrok kvara
-                st.error(f"Sistemski detalj greške: {str(e)}")
+                st.error(f"Sistemska greška: {str(e)}")
 
 # --- TAB 4: TROŠKOVNIK (POPRAVLJENO) ---
 with tab4:
