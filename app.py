@@ -85,6 +85,36 @@ with tab3:
             width="100%" height="600" style="border:none;"></iframe>
     """
     components.html(vreme_html, height=620)
+    # --- LOGIKA ZA PAMETNU PORUKU (Dodaj ovo ispod prikaza temperature i vlage) ---
+
+if 'vlaga' in locals() and 'temp' in locals():
+    st.markdown("### 📢 Agronomski savet za trenutno stanje")
+    
+    # Poruka za veliku vlažnost i umerenu temperaturu (kao večeras)
+    if vlaga > 85 and temp < 20:
+        st.warning(f"""
+        **Trenutno stanje u Kruševcu ({datetime.now().strftime('%H:%M')}h):** 
+        Temperatura je {temp}°C, a vlažnost je skočila na {vlaga}%. 
+        Ako sutra planiraš zalivanje, zemlja će već biti prilično vlažna od ove sparine, 
+        pa nemoj preterivati sa količinom vode.
+        """)
+        
+    # Poruka za ekstremne vrućine (preko dana)
+    elif temp > 30:
+        st.error(f"""
+        **VRELA ZEMLJA:** Trenutno je {temp}°C. 
+        Nikako ne zalivaj hladnom vodom iz bunara! 
+        Sačekaj veče ili koristi odstojalu vodu iz kontejnera.
+        """)
+        
+    # Poruka za idealne uslove
+    elif 18 <= temp <= 25 and 40 <= vlaga <= 60:
+        st.success("✅ **IDEALNI USLOVI:** Vreme je savršeno za redovno zalivanje i radove u polju.")
+        
+    # Poruka za rizik od mraza
+    elif temp < 4:
+        st.info("❄️ **OPREZ:** Niske temperature. Biljke su u stanju mirovanja, smanjiti zalivanje na minimum.")
+
     
     st.markdown("---")
     st.subheader("🗺️ Obeleži parcelu")
