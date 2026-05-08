@@ -100,6 +100,28 @@ with tab3:
     if izlaz_mape and izlaz_mape.get('last_clicked'):
         st.success(f"Koordinate tvoje njive: {izlaz_mape['last_clicked']['lat']:.4f}, {izlaz_mape['last_clicked']['lng']:.4f}")
 
+with tab3:
+    st.markdown("---")
+    st.subheader("💧 Vodič za navodnjavanje (Kontejner sistem)")
+    
+    col_v1, col_v2 = st.columns(2)
+    with col_v1:
+        st.info("""
+        **Zlatna pravila:**
+        * **Jutro je zakon:** Zalivaj između 05:00 i 08:00h.
+        * **Izbegavaj veče:** Noćna vlaga na listu priziva plamenjaču.
+        * **Kontejner:** Tvoja voda je idealna jer nije hladna (nema šoka za koren).
+        """)
+    
+    with col_v2:
+        kultura_v = st.selectbox("Norma za:", ["Paradajz/Paprika", "Krastavac", "Voće (3.g)"])
+        if kultura_v == "Paradajz/Paprika":
+            st.write("📍 **Potreba:** 2-3 litra po biljci (svaki drugi dan u maju, svaki dan u julu).")
+        elif kultura_v == "Krastavac":
+            st.write("📍 **Potreba:** Krastavac traži stalnu vlagu. Svaki dan po 2 litra ujutru.")
+        else:
+            st.write("📍 **Potreba:** 20-30 litara po stablu jednom nedeljno ako nema kiše.")
+
 
 # --- TAB 4: TROŠKOVNIK (POPRAVLJENO) ---
 with tab4:
