@@ -74,53 +74,52 @@ with tab2:
             st.session_state.dnevnik.append({"Datum": datetime.now().strftime("%d.%m."), "Kultura": f"{kultura} ({tip})", "Radovi": ", ".join(p_rad)})
             st.success("Dodato u digitalnu knjigu!")
 
-# --- TAB 3: MAPA I METEO ALARM (FINALNA POPRAVKA) ---
+# --- TAB 3: MAPA I METEO ALARM (FINALNA PROVERA) ---
 with tab3:
     st.header("📍 Pametni Alarm za prskanje")
-    st.write("Kliknite na mapu da vidite prognozu za vašu tačku:")
+    st.write("Kliknite na mapu za proveru uslova za plamenjaču:")
     
     m = folium.Map(location=[44.0165, 21.0059], zoom_start=7)
     folium.LatLngPopup().add_to(m)
-    izlaz_mape = st_folium(m, width=700, height=400, key="agro_mapa_v8")
+    izlaz_mape = st_folium(m, width=700, height=400, key="agro_mapa_finalna")
 
     if izlaz_mape and izlaz_mape.get('last_clicked'):
         lat = izlaz_mape['last_clicked']['lat']
         lon = izlaz_mape['last_clicked']['lng']
         
         if not meteo_key:
-            st.warning("⚠️ Unesite ključ u levi meni.")
+            st.warning("⚠️ Unesi API ključ u meni levo.")
         else:
             try:
-                # Koristimo timeout i strip() da očistimo ključ
-                cist_kljuc = meteo_key.strip()
-                url = f"https://openweathermap.org"
-                parametri = {
-                    'lat': lat,
-                    'lon': lon,
-                    'appid': cist_kljuc,
-                    'units': 'metric',
-                    'lang': 'sr'
-                }
+                # 1. Čistimo ključ od razmaka i tačaka
+                cist_kljuc = meteo_key.strip().replace(".", "")
                 
-                odgovor = requests.get(url, params=parametri, timeout=10)
-                podaci = odgovor.json()
+                # 2. Koristimo alternativnu adresu (API 2.5) koja je najstabilnija
+                url = f"https://openweathermap.org{lat}&lon={lon}&appid={cist_kljuc}&units=metric&lang=sr"
                 
-                if odgovor.status_code == 200:
-                    vlaga = podaci['main']['humidity']
-                    temp = podaci['main']['temp']
-                    st.success(f"Lokacija potvrđena: {lat:.4f}, {lon:.4f}")
+                response = requests.get(url, timeout=10)
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    vlaga = data['main']['humidity']
+                    temp = data['main']['temp']
+                    
+                    st.success(f"Lokacija: {lat:.4f}, {lon:.4f}")
                     col1, col2 = st.columns(2)
-                    col1.metric("Vlažnost", f"{vlaga}%")
+                    col1.metric("Vlažnost vazduha", f"{vlaga}%")
                     col2.metric("Temperatura", f"{temp}°C")
                     
                     if vlaga > 80 and temp > 15:
                         st.error("🚨 **ALARM:** Uslovi za plamenjaču! Poprskaj čim se list osuši!")
                     else:
-                        st.success("✅ Uslovi su stabilni.")
+                        st.info("✅ Uslovi su trenutno stabilni.")
+                elif response.status_code == 401:
+                    st.error("❌ Greška 401: Ključ još nije aktiviran. Sačekaj par sati od kreiranja na sajtu.")
                 else:
-                    st.error(f"Greška {odgovor.status_code}: {podaci.get('message', 'Nepoznat problem')}")
+                    st.error(f"Greška {response.status_code}: Server ne odgovara pravilno.")
             except Exception as e:
-                st.error(f"Sistemska greška: {e}")
+                st.error("Problem sa internet vezom. Pokušaj ponovo za minut.")
+
 
 # --- TAB 4: TROŠKOVNIK (POPRAVLJENO) ---
 with tab4:
