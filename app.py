@@ -27,14 +27,29 @@ tab1, tab2, tab3, tab4 = st.tabs(["🍎 Voćarstvo", "🥦 Povrtarstvo", "🤖 P
 
 # Pomoćna funkcija za AI
 def pitaj_ai(pitanje):
+    if not ai_key:
+        return "Greska: Niste uneli AI ključ!"
+    
+    # Direktna i najstabilnija putanja koju smo ranije koristili
     url = f"https://googleapis.com{ai_key.strip()}"
+    
     headers = {'Content-Type': 'application/json'}
-    data = {"contents": [{"parts": [{"text": pitanje}]}]}
+    data = {
+        "contents": [{
+            "parts": [{"text": pitanje}]
+        }]
+    }
+    
     try:
-        r = requests.post(url, headers=headers, json=data)
-        return r.json()['candidates']['content']['parts']['text']
-    except:
-        return "Trenutno ne mogu da pristupim AI savetniku. Proverite ključ."
+        response = requests.post(url, headers=headers, json=data)
+        if response.status_code == 200:
+            res_json = response.json()
+            return res_json['candidates']['content']['parts']['text']
+        else:
+            return f"Greška sa servera (Kod {response.status_code}): {response.text}"
+    except Exception as e:
+        return f"Greška u povezivanju: {str(e)}"
+
 
 # --- TAB 1: VOĆARSTVO ---
 with tab1:
