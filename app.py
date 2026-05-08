@@ -71,11 +71,11 @@ with tab2:
     povrce = st.selectbox("Kultura:", ["Paradajz", "Paprika", "Krastavac", "Krompir", "Luk", "Lubenica", "Boranija", "Grašak"])
 
     baza_p = {
-        "Paradajz": "🌿 Zakidaj zaperke. 🚑 Hitna (3 dana karence): Quadris.",
-        "Paprika": "🐜 Prati tripsa. 🧪 Ishrana: Kalcijum (30ml/10L).",
-        "Krastavac": "🥒 Zalivaj svaki dan. 🛡️ Organski: Soda (50g/10L) protiv pepelnice.",
-        "Krompir": "🐞 Prati zlaticu. 🛡️ Jun: Zaštita od plamenjače nakon kiše."
+        "Krompir": "🌱 **Maj:** Nagrtanje zemlje i kontrola zlatice (traži narandžasta jaja pod listom). 🛡️ **Jun:** Glavna zaštita od plamenjače nakon svake kiše.",
+        "Paradajz": "🌿 **Maj:** Ukorenjavanje i prva folijarna prihrana. ✂️ **Jun:** Intenzivno zakidanje zaperaka.",
+        "Luk": "🐜 **Maj:** Zaštita od lukove muve. ⚠️ **Sparina:** Ako je vlažno, rizik od plamenjače luka!"
     }
+
     st.info(baza_p.get(povrce, "Pratite redovno stanje vlažnosti."))
 
     p_rad = st.multiselect("Urađeno:", ["Sadnja", "Zaštita", "Prihrana", "Berba"], key=f"p_{povrce}_{tip}")
