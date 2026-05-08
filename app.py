@@ -16,15 +16,18 @@ with tab1:
     # Ovde ćemo ubaciti tvoje fiksne savete koji uvek rade
     st.info(f"Prikazujem kalendar zaštite za {voce} u {godina}. godini...")
     
-    col1, col2 = st.columns(2)
+        col1, col2 = st.columns(2)
     with col1:
         st.subheader("🛡️ Zaštita")
         st.write("- Zimsko prskanje (Bakar)")
-        st.checkbox("Urađeno")
+        # Dodat jedinstveni ključ 'zastita_check'
+        st.checkbox("Urađeno", key="zastita_check")
     with col2:
         st.subheader("🧪 Prehrana")
         st.write("- Unos azotnih đubriva")
-        st.checkbox("Urađeno")
+        # Dodat jedinstveni ključ 'prehrana_check'
+        st.checkbox("Urađeno", key="prehrana_check")
+
 
 with tab2:
     st.header("Saveti za povrtare")
