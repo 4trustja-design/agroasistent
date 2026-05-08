@@ -74,7 +74,7 @@ with tab2:
             st.session_state.dnevnik.append({"Datum": datetime.now().strftime("%d.%m."), "Kultura": f"{kultura} ({tip})", "Radovi": ", ".join(p_rad)})
             st.success("Dodato u digitalnu knjigu!")
 
-# --- TAB 3: MAPA I METEO ALARM (POPRAVLJENO) ---
+# --- TAB 3: MAPA I METEO ALARM (POBOLJŠANO) ---
 with tab3:
     st.header("📍 Pametni Alarm za prskanje")
     st.write("Kliknite na mapu da vidite prognozu za vašu tačku:")
@@ -82,36 +82,45 @@ with tab3:
     m = folium.Map(location=[44.0165, 21.0059], zoom_start=7)
     folium.LatLngPopup().add_to(m)
     
-    izlaz_mape = st_folium(m, width=700, height=400, key="agro_mapa_v6")
+    izlaz_mape = st_folium(m, width=700, height=400, key="agro_mapa_v7")
 
-    # PROVERA: Pokreni prognozu SAMO ako je korisnik kliknuo na mapu
     if izlaz_mape and izlaz_mape.get('last_clicked'):
         lat = izlaz_mape['last_clicked']['lat']
         lon = izlaz_mape['last_clicked']['lng']
         
-        if meteo_key:
+        if not meteo_key:
+            st.warning("⚠️ Molimo unesite OpenWeather API ključ u meni sa leve strane!")
+        else:
             try:
-                # Link se pravi tek OVDE unutar if bloka
-                url = f"https://openweathermap.org{lat}&lon={lon}&appid={meteo_key}&units=metric&lang=sr"
+                url = f"https://openweathermap.org{lat}&lon={lon}&appid={meteo_key.strip()}&units=metric&lang=sr"
                 response = requests.get(url)
                 d = response.json()
                 
                 if response.status_code == 200:
                     vlaga = d['main']['humidity']
                     temp = d['main']['temp']
-                    st.metric("Trenutna Vlažnost", f"{vlaga}%")
-                    st.metric("Temperatura", f"{temp}°C")
+                    opis = d['weather'][0]['description']
                     
+                    st.success(f"Lokacija: {lat:.4f}, {lon:.4f}")
+                    c1, c2 = st.columns(2)
+                    c1.metric("Trenutna Vlažnost", f"{vlaga}%")
+                    c2.metric("Temperatura", f"{temp}°C")
+                    st.write(f"**Trenutno vreme:** {opis.capitalize()}")
+                    
+                    # Logika za alarm
                     if vlaga > 80 and temp > 15:
                         st.error("🚨 **ALARM:** Visoka vlaga! Idealno za plamenjaču. Poprskaj čim se list osuši!")
+                    elif temp < 2:
+                        st.error("❄️ **MRAZ:** Opasnost od smrzavanja!")
                     else:
-                        st.success("✅ Uslovi su stabilni za organsku preventivu.")
+                        st.success("✅ Uslovi su stabilni.")
+                elif response.status_code == 401:
+                    st.error("❌ Greška: API ključ nije ispravan ili još nije aktiviran (sačekaj 2 sata od kreiranja).")
                 else:
-                    st.error("Meteo ključ nije ispravan ili nije aktiviran.")
-            except Exception as e:
-                st.error(f"Greška pri učitavanju vremena.")
-        else:
-            st.warning("Unesite OpenWeather ključ u Sidebar (levo) da vidite alarm.")
+                    st.error(f"Gugl kaže: {d.get('message', 'Nepoznata greška')}")
+            except:
+                st.error("Povezivanje nije uspelo. Proveri internet vezu.")
+
 
 # --- TAB 4: TROŠKOVNIK (POPRAVLJENO) ---
 with tab4:
