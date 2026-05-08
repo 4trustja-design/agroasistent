@@ -50,26 +50,25 @@ with tab2:
     st.header("🥦 Saveti za povrtare")
     tip = st.radio("Mesto uzgoja:", ["Plastenik", "Otvoreno polje"], horizontal=True)
     
-    if tip == "Plastenik":
-        p_kultura = st.selectbox("Izaberi povrće:", ["Paradajz", "Paprika", "Krastavac (salatar)"])
-        saveti_p = {
-            "Paradajz": "● Zakidanje zaperaka svake nedelje. ● Prihrana kalcijumom protiv truljenja vrha ploda. ● Provetravanje iznad 28°C.",
-            "Paprika": "● Održavati vlažnost vazduha. ● Zaštita od tripsa. ● Često navodnjavanje manjim normama.",
-            "Krastavac (salatar)": "● Vođenje na kanap. ● Zaštita od pepelnice i plamenjače. ● Prihrana kalijumom tokom berbe."
-        }
-    else:
-        p_kultura = st.selectbox("Izaberi povrće:", ["Krompir", "Lubenica", "Beli luk", "Crni luk", "Bundeva", "Grašak", "Boranija"])
-        saveti_p = {
-            "Krompir": "● Suzbijanje zlatice. ● Nagrtanje kada dostigne 20cm. ● Zaštita od plamenjače.",
-            "Lubenica": "● Navodnjavanje tokom cvetanja. ● Zaštita od lisnih vaši i grinja.",
-            "Beli luk": "● Suzbijanje lukove muve. ● Prehrana azotom rano u proleće.",
-            "Crni luk": "● Zaštita od plamenjače posle kiše. ● Prestanak zalivanja 15 dana pre vađenja.",
-            "Bundeva": "● Veliki razmak sadnje. ● Zaštita od pepelnice u julu.",
-            "Grašak": "● Sejati što ranije (februar/mart). ● Navodnjavanje u fazi nalivanja zrna.",
-            "Boranija": "● Sukcesivna setva na 15 dana. ● Zaštita od rđe i vaši."
-        }
+    # Dodajemo izbor meseca i za povrće radi preciznosti
+    p_mesec = st.selectbox("Trenutni mesec:", ["Mart", "April", "Maj", "Jun", "Jul", "Avgust"], key="p_mesec")
     
-    st.success(saveti_p.get(p_kultura))
+    if tip == "Otvoreno polje":
+        p_kultura = st.selectbox("Izaberi povrće:", ["Krompir", "Lubenica", "Luk", "Grašak"])
+        
+        # Specifični saveti za KROMPIR po mesecima
+        if p_kultura == "Krompir":
+            if p_mesec in ["Mart", "April"]:
+                savet = "🌱 **Sadnja:** Dubina 8-10cm. Koristiti tretirane krtole."
+            elif p_mesec == "Maj":
+                savet = "🚜 **Radovi:** Nagrtanje i zaštita od zlatice ako se pojavi 10% larvi."
+            elif p_mesec == "Jun":
+                savet = "🛡️ **HITNO:** Visok rizik od plamenjače zbog kiša! **Prskati čim se list osuši nakon kiše** preventivnim fungicidom (npr. Ridomil, Antracol)."
+            else:
+                savet = "💦 **Navodnjavanje:** Ključno u fazi cvetanja i nalivanja krtola."
+    
+    st.warning(f"📌 {p_kultura} - Savet za {p_mesec}: {savet}")
+
     
     # Resetuje se pri promeni kulture ili tipa uzgoja
     p_rad = st.multiselect("Urađeno:", ["Sadnja", "Zaštita", "Prihrana", "Okopavanje", "Berba"], 
