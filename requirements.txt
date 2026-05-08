@@ -4,3 +4,5 @@ streamlit-folium
 pandas
 xlsxwriter
 requests
+st-gsheets-connection
+gspread
