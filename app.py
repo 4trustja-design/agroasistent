@@ -74,57 +74,67 @@ with tab2:
             st.session_state.dnevnik.append({"Datum": datetime.now().strftime("%d.%m."), "Kultura": f"{kultura} ({tip})", "Radovi": ", ".join(p_rad)})
             st.success("Dodato u digitalnu knjigu!")
 
-# --- TAB 3: MAPA I METEO ALARM (MAKSIMALNA STABILNOST) ---
+# --- TAB 3: MAPA I METEO ALARM (ULTRASIGURNA VERZIJA) ---
 with tab3:
     st.header("📍 Pametni Alarm za prskanje")
-    st.write("Kliknite na mapu za proveru uslova za plamenjaču:")
+    st.write("Kliknite na mapu da proverite uslove na parceli:")
     
     m = folium.Map(location=[44.0165, 21.0059], zoom_start=7)
     folium.LatLngPopup().add_to(m)
-    izlaz_mape = st_folium(m, width=700, height=400, key="agro_mapa_finalna")
+    izlaz_mape = st_folium(m, width=700, height=400, key="agro_mapa_v9")
 
     if izlaz_mape and izlaz_mape.get('last_clicked'):
-        # Skraćujemo koordinate na 4 decimale (OpenWeather to voli više)
-        lat = round(izlaz_mape['last_clicked']['lat'], 4)
-        lon = round(izlaz_mape['last_clicked']['lng'], 4)
+        lat = izlaz_mape['last_clicked']['lat']
+        lon = izlaz_mape['last_clicked']['lng']
         
         if not meteo_key:
-            st.warning("⚠️ Prvo unesi API ključ u meni sa leve strane!")
+            st.warning("⚠️ Prvo unesite ključ u polje sa leve strane.")
         else:
             try:
-                # Čišćenje ključa od svega što nije slovo ili broj
-                cist_kljuc = "".join(filter(str.isalnum, meteo_key))
+                # 1. Čišćenje ključa (uklanjamo sve nevidljive razmake)
+                cist_kljuc = meteo_key.strip()
                 
-                # Koristimo najprostiji mogući URL format
-                url = f"https://openweathermap.org{lat}&lon={lon}&appid={cist_kljuc}&units=metric&lang=sr"
+                # 2. Pravimo link za najstabilniji OpenWeather API
+                url = f"http://openweathermap.org{lat}&lon={lon}&appid={cist_kljuc}&units=metric&lang=sr"
                 
-                # Dodajemo 'headers' da prevarimo server da misli da smo običan brauzer
-                headers = {'User-Agent': 'Mozilla/5.0'}
-                response = requests.get(url, headers=headers, timeout=15)
+                # 3. Šaljemo zahtev (dodali smo 'timeout' da aplikacija ne bi 'visila')
+                response = requests.get(url, timeout=10)
+                podaci = response.json()
                 
                 if response.status_code == 200:
-                    data = response.json()
-                    vlaga = data['main']['humidity']
-                    temp = data['main']['temp']
-                    grad = data.get('name', 'Nepoznata lokacija')
+                    temp = podaci['main']['temp']
+                    vlaga = podaci['main']['humidity']
+                    vetar = podaci['wind']['speed']
+                    opis = podaci['weather'][0]['description']
                     
-                    st.success(f"Lokacija: {grad} ({lat}, {lon})")
-                    col1, col2 = st.columns(2)
-                    col1.metric("Vlažnost vazduha", f"{vlaga}%")
-                    col2.metric("Temperatura", f"{temp}°C")
+                    st.success(f"📍 Podaci za lokaciju: {lat:.4f}, {lon:.4f}")
                     
+                    c1, c2, c3 = st.columns(3)
+                    c1.metric("Temperatura", f"{temp}°C")
+                    c2.metric("Vlažnost", f"{vlaga}%")
+                    c3.metric("Vetar", f"{vetar} m/s")
+                    
+                    st.write(f"**Trenutno nebo:** {opis.capitalize()}")
+
+                    # --- AGRO ALARM ---
                     if vlaga > 80 and temp > 15:
-                        st.error("🚨 **ALARM:** Uslovi za plamenjaču! Poprskaj čim se list osuši (soda bikarbona ili mleko)!")
+                        st.error("🚨 **ALARM ZA PLAMENJAČU:** Vlažnost je kritična! Čim stane kiša i list se prosuši, uradite organsku zaštitu (soda bikarbona/mleko) ili hitnu hemiju ako je bolest već uzela maha.")
+                    elif vetar > 5:
+                        st.warning("💨 **PAŽNJA:** Vetar je prejak za prskanje. Sačekajte smirivanje (obično predveče).")
+                    elif temp < 2:
+                        st.error("❄️ **ALARM ZA MRAZ:** Visok rizik od oštećenja sadnica!")
                     else:
-                        st.info("✅ Uslovi su trenutno stabilni. Nastavi sa redovnom preventivom.")
-                
+                        st.info("✅ **VREME JE STABILNO:** Idealni uslovi za rad u polju.")
+                        
                 elif response.status_code == 401:
-                    st.error("❌ Greška 401: Ključ nije ispravan ili još nije aktiviran. Proveri da nemaš tačku na kraju!")
+                    st.error("❌ Greška 401: Ključ nije ispravan. Proverite da niste slučajno kopirali i razmak ispred.")
                 else:
-                    st.error(f"Server javlja grešku: {response.status_code}")
-            
+                    st.error(f"Problem na serveru (Kod {response.status_code})")
+                    
             except Exception as e:
-                st.error(f"Greška u konekciji: Proveri da li je ključ ispravno kopiran.")
+                # Ispisujemo tačnu grešku da znamo šta se dešava
+                st.error(f"Došlo je do greške: Proverite internet ili sačekajte minut.")
+
 
 # --- TAB 4: TROŠKOVNIK (POPRAVLJENO) ---
 with tab4:
