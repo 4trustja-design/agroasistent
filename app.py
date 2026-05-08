@@ -1,10 +1,10 @@
 import streamlit as st
-from streamlit_folium import st_folium
+import streamlit.components.v1 as components  # OVA LINIJA IDE OVDE
 import folium
-from datetime import datetime
+from streamlit_folium import st_folium
 import pandas as pd
-import requests
-import io
+# ... ostatak koda ...
+
 
 # 1. KONFIGURACIJA
 st.set_page_config(page_title="AgroAsistent Pro", layout="wide", page_icon="🌿")
