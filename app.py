@@ -53,23 +53,29 @@ with tab2:
     tip = st.radio("Mesto uzgoja:", ["Plastenik", "Otvoreno polje"], horizontal=True)
     p_mesec = st.selectbox("Izaberi mesec:", ["Maj", "Jun", "Jul", "Avgust"], key="p_m")
     
-    if tip == "Plastenik":
+       if tip == "Plastenik":
         kultura = st.selectbox("Povrće:", ["Paradajz", "Paprika", "Krastavac"])
         baza_p = {
             "Paradajz": {
                 "Maj": "🧪 **Ishrana (10L kanta):** Fitofert Calcium (30ml). 🐜 **Vaši:** Laser (8ml na 16L). **Karenca:** 3 dana.",
-                "Jun": "⚠️ **Plamenjača:** Ridomil Gold (40g na 16L). **Karenca:** 21 dan! (Ako je pred berbu koristi Quadris - 3 dana).",
-                "Jul": "🛡️ **Trulež ploda:** Switch (10g na 16L). **Karenca:** 3 dana. 🧪 **Ishrana (10L):** Kristalon Crveni (20g)."
+                "Jun": "⚠️ **Plamenjača:** Ridomil Gold (40g na 16L). **Karenca:** 21 dan. 🌿 **Radovi:** Redovno pinciranje.",
+                "Jul": "🛡️ **Trulež:** Switch (10g na 16L). **Karenca:** 3 dana. 🧪 **Ishrana:** Kristalon Crveni (20g na 10L).",
+                "Avgust": "🧺 **Berba:** Voditi računa o karenti. ✂️ Skidanje donjih listova radi provetravanja."
             },
             "Paprika": {
-                "Jun": "🛡️ **Bakterioza:** Bakarni kreč (30g na 16L). **Karenca:** 14 dana. 🐜 **Trips:** Exirel (10ml na 16L). **Karenca:** 1 dan.",
-                "Jul": "🧪 **Ishrana (10L):** Kristalon Crveni (25g). 🐜 **Vaši:** Afinex (5g na 16L). **Karenca:** 7 dana."
+                "Maj": "🌱 **Nakon sadnje:** Podsticanje ukorenjavanja (Fitofert Humisuper 30ml na 10L). 🐜 **Trips:** Vertical (10ml na 16L). **Karenca:** 7 dana.",
+                "Jun": "🛡️ **Bakterioza:** Bakarni kreč (30g na 16L). **Karenca:** 14 dana. 🧪 **Ishrana:** Kristalon Zeleni (20g na 10L).",
+                "Jul": "🧪 **Ishrana (10L):** Kristalon Crveni (25g). 🐜 **Vaši:** Afinex (5g na 16L). **Karenca:** 7 dana.",
+                "Avgust": "🌶️ **Berba:** Zaštita od bele leptiraste vaši (Chess 6g na 16L). **Karenca:** 7 dana."
             },
             "Krastavac": {
-                "Jun": "⚠️ **Plamenjača:** Equation Pro (10g na 16L). **Karenca:** 3 dana. 🐜 **Grinje:** Abastate (15ml na 16L) + Okvašivač. **Karenca:** 3 dana.",
-                "Jul": "🧺 **Berba:** Svakodnevno. 🧪 **Ishrana (10L):** Wuxal Super (30ml) - folijarno."
+                "Maj": "🌿 **Vođenje:** Formiranje vreže na kanap. 🛡️ **Pepelnica:** Nimrod (10ml na 16L). **Karenca:** 3 dana.",
+                "Jun": "⚠️ **Plamenjača:** Equation Pro (10g na 16L). **Karenca:** 3 dana. 🐜 **Grinje:** Abastate (15ml na 16L).",
+                "Jul": "🧺 **Intenzivna berba:** Svaki drugi dan. 🧪 **Ishrana (10L):** Wuxal Super (30ml).",
+                "Avgust": "🛡️ **Podmlađivanje:** Uklanjanje starih listova. Zaštita od grinja (Envidor 10ml na 16L)."
             }
         }
+
     else:
         kultura = st.selectbox("Povrće:", ["Krompir", "Lubenica", "Beli luk", "Crni luk", "Bundeva", "Grašak", "Boranija"])
         baza_p = {
