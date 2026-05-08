@@ -53,61 +53,60 @@ with tab2:
             st.session_state.dnevnik.append({"Datum": datetime.now().strftime("%d.%m.%Y"), "Kultura": f"{kultura} ({tip})", "Radovi": ", ".join(p_rad)})
             st.success("Zapisano!")
 
-# --- TAB 3: RADAR, MAPA I PAMETNI SAVET (FIKS ZA KONEKCIJU) ---
+# --- TAB 3: RADAR, MAPA I PAMETNI SAVET (OTPORAN NA GREŠKE) ---
 with tab3:
     st.header("🛰️ Vremenski radar uživo (Kruševac)")
     vreme_html = """<iframe src="https://vremeradar.rs" width="100%" height="600" style="border:none;"></iframe>"""
     components.html(vreme_html, height=620)
     
     st.markdown("---")
-    st.subheader("🗺️ Obeleži parcelu za precizan savet")
+    st.subheader("🗺️ Obeleži parcelu i proveri uslove")
+    
     m = folium.Map(location=[43.5616, 21.3694], zoom_start=15)
     folium.LatLngPopup().add_to(m)
-    izlaz_mape = st_folium(m, width=700, height=450, key="agro_mapa_pro_v12")
+    izlaz_mape = st_folium(m, width=700, height=450, key="mapa_v15")
     
-    if izlaz_mape and izlaz_mape.get('last_clicked'):
-        lat, lon = izlaz_mape['last_clicked']['lat'], izlaz_mape['last_clicked']['lng']
-        
-        if not meteo_key:
-            st.warning("⚠️ Prvo unesi OpenWeather API ključ u meni sa leve strane!")
-        else:
-            try:
-                # Čistimo ključ od razmaka i tačaka
-                cist_kljuc = meteo_key.strip().replace(".", "")
-                
-                # Koristimo najstabilniji API link (v2.5)
-                url = f"https://openweathermap.org{lat}&lon={lon}&appid={cist_kljuc}&units=metric&lang=sr"
-                
-                # Dodajemo 'timeout' da aplikacija ne bi 'pukla' ako server kasni
-                res = requests.get(url, timeout=10)
-                
-                if res.status_code == 200:
-                    d = res.json()
-                    temp = d['main']['temp']
-                    vlaga = d['main']['humidity']
-                    
-                    st.success(f"📍 Podaci za lokaciju: {lat:.4f}, {lon:.4f}")
-                    col1, col2 = st.columns(2)
-                    col1.metric("Vlažnost vazduha", f"{vlaga}%")
-                    col2.metric("Temperatura", f"{temp}°C")
+    # --- PAMETNA LOGIKA ZA SAVET ---
+    st.markdown("### 📢 Agronomski savet za navodnjavanje i zaštitu")
+    
+    # Inicijalizacija vrednosti
+    vlaga_za_savet = None
+    temp_za_savet = None
 
-                    st.markdown("### 📢 Agronomski savet za trenutno stanje")
-                    if vlaga > 85 and temp < 20:
-                        st.warning(f"**Trenutno stanje u Kruševcu ({datetime.now().strftime('%H:%M')}h):** Temperatura je {temp}°C, a vlažnost je {vlaga}%. Ako sutra planiraš zalivanje, zemlja će već biti prilično vlažna od ove sparine, pa nemoj preterivati.")
-                    elif temp > 30:
-                        st.error(f"**VRELA ZEMLJA:** Trenutno je {temp}°C. Ne zalivaj hladnom vodom iz bunara!")
-                    elif 18 <= temp <= 25 and 40 <= vlaga <= 65:
-                        st.success("✅ **IDEALNI USLOVI:** Vreme je savršeno za radove.")
-                    else:
-                        st.info("Podaci su osveženi. Prati stanje vlage zbog rizika od plamenjače.")
-                
-                elif res.status_code == 401:
-                    st.error("❌ Greška 401: API ključ nije ispravan ili još nije aktiviran (sačekaj 2 sata od kreiranja na sajtu).")
-                else:
-                    st.error(f"Server javlja grešku (Kod {res.status_code})")
-                    
-            except Exception as e:
-                st.error(f"Sistemska greška: Proveri internet ili pokušaj ponovo za minut.")
+    # Pokušaj povezivanja na internet
+    if izlaz_mape and izlaz_mape.get('last_clicked') and meteo_key:
+        lat, lon = izlaz_mape['last_clicked']['lat'], izlaz_mape['last_clicked']['lng']
+        try:
+            cist_kljuc = meteo_key.strip().replace(".", "")
+            url = f"https://openweathermap.org{lat}&lon={lon}&appid={cist_kljuc}&units=metric&lang=sr"
+            res = requests.get(url, timeout=5)
+            if res.status_code == 200:
+                d = res.json()
+                vlaga_za_savet = d['main']['humidity']
+                temp_za_savet = d['main']['temp']
+                st.success(f"Automatski podaci: Vlaga {vlaga_za_savet}%, Temp {temp_za_savet}°C")
+        except:
+            st.warning("⚠️ Trenutni problem sa internet vezom. Koristite ručni unos ispod za savet.")
+
+    # Ručni unos kao REZERVNI PLAN (uvek vidljiv ako internet zakaže)
+    if not vlaga_za_savet:
+        col_r1, col_r2 = st.columns(2)
+        with col_r1:
+            temp_za_savet = st.number_input("Unesi temperaturu (°C):", value=15)
+        with col_r2:
+            vlaga_za_savet = st.slider("Unesi vlažnost vazduha (%):", 0, 100, 90)
+
+    # ISPIS SAVETA (Radi i za automatiku i za ručni unos)
+    if vlaga_za_savet and temp_za_savet:
+        if vlaga_za_savet > 85 and temp_za_savet < 20:
+            st.warning(f"**SAVET:** Trenutno je velika sparina (Vlaga {vlaga_za_savet}%). Ako sutra planiraš zalivanje, zemlja će već biti prilično vlažna, pa nemoj preterivati sa količinom vode iz onog kontejnera!")
+        elif temp_za_savet > 30:
+            st.error(f"**VRELA ZEMLJA:** Na {temp_za_savet}°C ne zalivaj hladnom vodom iz bunara! Biljke će doživeti šok.")
+        elif 18 <= temp_za_savet <= 25 and 40 <= vlaga_za_savet <= 65:
+            st.success("✅ **IDEALNO:** Uslovi su savršeni za redovne radove.")
+        else:
+            st.info("Uslovi su umereni. Prati stanje u plasteniku zbog rose.")
+
 
 # --- TAB 4: TROŠKOVNIK ---
 with tab4:
