@@ -154,13 +154,37 @@ with tab4:
         st.table(pd.DataFrame(st.session_state.troskovi))
         st.subheader(f"Ukupno: {pd.DataFrame(st.session_state.troskovi)['Iznos'].sum():,.2f} RSD")
 
-# --- DNEVNIK NA DNU ---
+# --- DNEVNIK I EKSPORT NA DNU ---
 st.markdown("---")
-if st.session_state.dnevnik:
-    st.subheader("📓 Dnevnik")
-    df_d = pd.DataFrame(st.session_state.dnevnik)
-    st.table(df_d)
+if st.session_state.dnevnik or st.session_state.troskovi:
+    st.subheader("📓 Kompletna evidencija sezone")
+    
+    # Prikaz radova ako postoje
+    if st.session_state.dnevnik:
+        st.write("**Zabeleženi radovi:**")
+        df_d = pd.DataFrame(st.session_state.dnevnik)
+        st.table(df_d)
+    
+    # Dugme za preuzimanje SVEGA u jedan fajl
     output = io.BytesIO()
     with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-        df_d.to_excel(writer, index=False)
+        # Prvi list: Radovi
+        if st.session_state.dnevnik:
+            df_d = pd.DataFrame(st.session_state.dnevnik)
+            df_d.to_excel(writer, index=False, sheet_name='Dnevnik_Radova')
+        
+        # Drugi list: Troskovi
+        if st.session_state.troskovi:
+            df_t = pd.DataFrame(st.session_state.troskovi)
+            df_t.to_excel(writer, index=False, sheet_name='Troškovi_Investicije')
+    
+    st.download_button(
+        label="📥 Preuzmi sve (Excel sa dva lista)",
+        data=output.getvalue(),
+        file_name=f"AgroAsistent_Izvestaj_{datetime.now().strftime('%d_%m')}.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+else:
+    st.info("Evidencija je prazna. Unesite radove ili troškove da biste aktivirali preuzimanje.")
+
     st.download_button("📥 Preuzmi Excel", data=output.getvalue(), file_name="agro_dnevnik.xlsx")
