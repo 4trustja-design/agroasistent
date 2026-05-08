@@ -74,56 +74,31 @@ with tab2:
             st.session_state.dnevnik.append({"Datum": datetime.now().strftime("%d.%m."), "Kultura": f"{kultura} ({tip})", "Radovi": ", ".join(p_rad)})
             st.success("Dodato u digitalnu knjigu!")
 
-# --- TAB 3: MAPA I METEO ALARM (FIX ZA LINK) ---
+# --- TAB 3: MOJA PARCELA I RADAR (BEZ KLJUČA) ---
 with tab3:
-    st.header("📍 Pametni Alarm za prskanje")
-    st.write("Kliknite na mapu da vidite prognozu:")
+    st.header("📍 Lokacija i Vremenski Radar")
     
-    m = folium.Map(location=[44.0165, 21.0059], zoom_start=7)
+    # 1. PASUS: Radar uživo sa vremeradar.rs (Vidžet koji uvek radi)
+    st.subheader("🛰️ Kišni radar uživo (Srbija)")
+    
+    # Ovaj kod ubacuje direktan prozor sa sajta vremeradar.rs
+    radar_html = """
+    <iframe src="https://vreme-radar.rs" 
+            width="100%" height="600" style="border:none;"></iframe>
+    """
+    st.components.v1.html(radar_html, height=620)
+    
+    st.markdown("---")
+    
+    # 2. PASUS: Tvoja interaktivna mapa za koordinate
+    st.subheader("🗺️ Obeleži parcelu")
+    m = folium.Map(location=[43.5615, 21.3696], zoom_start=12) # Centrirano na Kruševac
     folium.LatLngPopup().add_to(m)
-    izlaz_mape = st_folium(m, width=700, height=400, key="agro_mapa_final_v11")
-
+    izlaz_mape = st_folium(m, width=700, height=400, key="mapa_krusevac")
+    
     if izlaz_mape and izlaz_mape.get('last_clicked'):
-        lat = round(izlaz_mape['last_clicked']['lat'], 4)
-        lon = round(izlaz_mape['last_clicked']['lng'], 4)
-        
-        if not meteo_key:
-            st.warning("⚠️ Prvo unesite ključ u meni levo.")
-        else:
-            try:
-                # 1. Čistimo ključ od svega što nisu slova i brojevi
-                cist_kljuc = "".join(filter(str.isalnum, meteo_key))
-                
-                # 2. DEFINIŠEMO ADRESU I PARAMETRE ODVOJENO (ovo sprečava lepljenje)
-                url_baza = "http://openweathermap.org"
-                parametri = {
-                    "lat": lat,
-                    "lon": lon,
-                    "appid": cist_kljuc,
-                    "units": "metric",
-                    "lang": "sr"
-                }
-                
-                # 3. Šaljemo zahtev (requests će sam pravilno spojiti ?lat=...&lon=...)
-                response = requests.get(url_baza, params=parametri, timeout=15)
-                
-                if response.status_code == 200:
-                    podaci = response.json()
-                    t = podaci['main']['temp']
-                    v = podaci['main']['humidity']
-                    st.success(f"📍 Lokacija: {lat}, {lon}")
-                    col1, col2 = st.columns(2)
-                    col1.metric("Vlažnost", f"{v}%")
-                    col2.metric("Temperatura", f"{t}°C")
-                    
-                    if v > 80:
-                        st.error("🚨 **ALARM:** Uslovi za plamenjaču! Poprskaj čim se list osuši!")
-                    else:
-                        st.success("✅ Uslovi su stabilni.")
-                else:
-                    st.error(f"Server javlja grešku (Kod {response.status_code}). Proveri ključ.")
-            except Exception as e:
-                st.error(f"Sistemska greška: {str(e)}")
+        st.success(f"Koordinate tvoje njive: {izlaz_mape['last_clicked']['lat']:.4f}, {izlaz_mape['last_clicked']['lng']:.4f}")
+
 
 # --- TAB 4: TROŠKOVNIK (POPRAVLJENO) ---
 with tab4:
