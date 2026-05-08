@@ -75,20 +75,21 @@ with tab2:
             st.success("Dodato u digitalnu knjigu!")
 
 # --- TAB 3: MOJA PARCELA I RADAR (BEZ KLJUČA) ---
+# --- TAB 3: RADAR I MAPA (POPRAVLJENO) ---
 with tab3:
-    st.header("📍 Lokacija i Vremenski Radar")
+    st.header("🛰️ Vremenski radar uživo (Srbija)")
     
-    # 1. PASUS: Radar uživo sa vremeradar.rs (Vidžet koji uvek radi)
-    st.subheader("🛰️ Kišni radar uživo (Srbija)")
-    
-    # Ovaj kod ubacuje direktan prozor sa sajta vremeradar.rs
-    radar_html = """
-    <iframe src="https://vreme-radar.rs" 
+    # Koristimo direktan link koji je stabilniji
+    vreme_html = """
+    <iframe src="https://vremeradar.rs" 
             width="100%" height="600" style="border:none;"></iframe>
     """
-    st.components.v1.html(radar_html, height=620)
+    components.html(vreme_html, height=620)
     
     st.markdown("---")
+    st.subheader("🗺️ Obeleži parcelu")
+    # ... ostatak koda za folium mapu ostaje isti ...
+
     
     # 2. PASUS: Tvoja interaktivna mapa za koordinate
     st.subheader("🗺️ Obeleži parcelu")
