@@ -106,6 +106,29 @@ with tab3:
             st.success("✅ **IDEALNO:** Uslovi su savršeni za redovne radove.")
         else:
             st.info("Uslovi su umereni. Prati stanje u plasteniku zbog rose.")
+                # --- NOVO: RECEPT ZA ZAŠTITU POSLE KIŠE/SPARINE ---
+    if vlaga_za_savet > 80:
+        st.markdown("---")
+        st.subheader("🛡️ Hitna organska zaštita (Recept za 16L)")
+        st.write("Zbog vlage iznad 80%, preporučuje se preventivno prskanje čim se list osuši:")
+        
+        recept = st.radio("Izaberi sredstvo:", ["Soda bikarbona", "Mleko (domaće)"])
+        
+        if recept == "Soda bikarbona":
+            st.success("""
+            **Doza za tvoju prskalicu (16L):**
+            *   **80g sode bikarbone** (oko 4 pune supene kašike).
+            *   **3-4 kapi dečijeg šampona** (da se soda zalepi za list).
+            *   *Savet:* Prvo razmuti sodu u malo mlake vode, pa sipaj u prskalicu.
+            """)
+        else:
+            st.success("""
+            **Doza za tvoju prskalicu (16L):**
+            *   **1.5 litar mleka** (najbolje sirovo, nekuvano).
+            *   **14.5 litara vode.**
+            *   *Kako radi:* Mleko stvara film na listu koji sprečava gljivice da prodru unutra.
+            """)
+
 
 
 # --- TAB 4: TROŠKOVNIK ---
