@@ -9,7 +9,7 @@ import io
 # 1. OSNOVNA PODEŠAVANJA
 st.set_page_config(page_title="AgroAsistent Pro", layout="wide", page_icon="🌾")
 
-# Inicijalizacija dnevnika
+# Inicijalizacija dnevnika u memoriji
 if 'dnevnik' not in st.session_state:
     st.session_state.dnevnik = []
 
@@ -27,16 +27,12 @@ with st.expander("ℹ️ UPUTSTVO ZA RAD (Karenca i Doziranje)"):
 with st.sidebar:
     st.header("⚙️ Podešavanja")
     meteo_key = st.text_input("OpenWeather API Ključ:", type="password")
-    if st.button("Obriši celu istoriju radova"):
-        st.session_state.dnevnik = []
-        st.rerun()
 
 tab1, tab2, tab3 = st.tabs(["🍎 Mešoviti Voćnjak (3.g)", "🥦 Povrtarstvo", "📍 Moja Parcela"])
 
 # --- TAB 1: VOĆARSTVO ---
 with tab1:
     st.header("🍎 Zaštita i Ishrana Voćnjaka (3. godina)")
-    st.write("Šljiva, kruška, jabuka, dunja, višnja, trešnja, breskva, nektarina")
     v_mesec = st.selectbox("Izaberi mesec:", ["Mart", "April", "Maj", "Jun", "Jul", "Avgust", "Septembar"], key="v_m")
     
     baza_v = {
@@ -87,13 +83,16 @@ with tab2:
         kultura = st.selectbox("Povrće:", ["Krompir", "Lubenica", "Beli luk", "Crni luk", "Bundeva", "Grašak", "Boranija"])
         baza_p = {
             "Krompir": {
+                "Maj": "🐞 **Zlatica:** Coragen (3ml na 16L). 🚜 **Nagrtanje.**",
                 "Jun": "⚠️ **PLAMENJAČA (posle kiše):** Ridomil Gold (40g na 16L). Karenca: 21 dan.",
-                "Jul": "🛡️ **Plamenjača:** Revus (10ml na 16L). Karenca: 7 dana. 💦 **Zalivanje!**"
+                "Jul": "🛡️ **Plamenjača:** Revus (10ml na 16L). Karenca: 7 dana. 💦 **Zalivanje!**",
+                "Avgust": "🧺 **Vađenje.**"
             },
             "Lubenica": {
                 "Maj": "🌱 **Ukorenjavanje:** Humisuper (30ml na 10L). 🛡️ **Bakterioza:** Bakarni kreč (30g na 16L).",
                 "Jun": "🛡️ **Plamenjača:** Quadris (15ml na 16L). Karenca: 3 dana. 🐜 **Vaši:** Confidor (5ml na 16L).",
-                "Jul": "🧪 **Ishrana:** Kristalon Crveni (25g na 10L). 💦 **Zalivanje ujutru.**"
+                "Jul": "🧪 **Ishrana:** Kristalon Crveni (25g na 10L). 💦 **Zalivanje ujutru.**",
+                "Avgust": "🍉 Smanjiti zalivanje radi šećera."
             },
             "Beli luk": {
                 "Maj": "🛡️ **Plamenjača:** Ridomil Gold R (50g na 16L). 🧪 **Ishrana:** KAN (15g po m2).",
@@ -101,7 +100,8 @@ with tab2:
             },
             "Crni luk": {
                 "Maj": "⚠️ **Plamenjača:** Ridomil Gold MZ (40g na 16L). 🐜 **Muva:** Mospilan (4g na 16L).",
-                "Jun": "🛡️ **Zaštita:** Quadris (15ml na 16L). Karenca: 7 dana."
+                "Jun": "🛡️ **Zaštita:** Quadris (15ml na 16L). Karenca: 7 dana.",
+                "Jul": "🧺 **Vađenje luka.**"
             },
             "Bundeva": {
                 "Jun": "🌿 **Radovi:** Okopavanje. 🧪 **Ishrana:** NPK 20:20:20 (20g na 10L).",
@@ -112,14 +112,14 @@ with tab2:
             },
             "Boranija": {
                 "Jun": "🌱 **Setva (drugi rok).** 🛡️ **Rđa:** Mancogal (30g na 16L). Karenca: 14 dana.",
-                "Jul": "🧺 **Berba svaka 2 dana.** 💦 **Zalivanje** u cvetu ne sme da zasuši."
+                "Jul": "🧺 **Berba svaka 2 dana.** 💦 **Zalivanje** u cvetu."
             }
         }
 
-    info = baza_p.get(kultura, {}).get(p_mesec, "Pratite opšte stanje biljke i vlažnost.")
+    info = baza_p.get(kultura, {}).get(p_mesec, "Pratite opšte stanje biljke.")
     st.warning(f"📌 **{kultura} ({p_mesec}):** {info}")
     
-    p_rad = st.multiselect("Urađeno:", ["Zalivanje/Prihrana", "Zaštita (Prskanje)", "Berba", "Okopavanje"], key=f"p_r_{kultura}_{p_mesec}")
+    p_rad = st.multiselect("Urađeno:", ["Zalivanje/Prihrana", "Zaštita (Prskanje)", "Berba", "Okopavanje"], key=f"p_r_{kultura}_{p_mesec}_{tip}")
     if st.button("Zapiši rad u povrtnjaku", key="p_btn"):
         if p_rad:
             st.session_state.dnevnik.append({"Datum": datetime.now().strftime("%d.%m.%Y"), "Kultura": f"{kultura} ({p_mesec})", "Radovi": ", ".join(p_rad)})
@@ -139,25 +139,31 @@ with tab3:
             d = requests.get(url).json()
             if "main" in d:
                 st.metric("Temperatura", f"{d['main']['temp']} °C")
-                st.write(f"**Vreme:** {d['weather'][0]['description']}")
+                st.write(f"**Vreme:** {d['weather']['description']}")
 
-# --- DNEVNIK I EXPORT ---
+# --- DNEVNIK I PREUZIMANJE ---
 st.markdown("---")
-st.subheader("📓 Dnevnik radova (Istorija)")
+st.subheader("📓 Digitalna knjiga polja")
+
 if st.session_state.dnevnik:
     df = pd.DataFrame(st.session_state.dnevnik)
-    st.table(df)
+    st.dataframe(df, use_container_width=True)
     
-    # Funkcija za Export u Excel
-    buffer = io.BytesIO()
-    with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
-        df.to_excel(writer, index=False, sheet_name='Dnevnik_Radova')
+    towrite = io.BytesIO()
+    df.to_excel(towrite, index=False, engine='xlsxwriter')
+    towrite.seek(0)
     
-    st.download_button(
-        label="📥 Preuzmi dnevnik (Excel)",
-        data=buffer.getvalue(),
-        file_name=f"agro_dnevnik_{datetime.now().strftime('%d_%m')}.xlsx",
-        mime="application/vnd.ms-excel"
-    )
+    col_dl, col_del = st.columns(2)
+    with col_dl:
+        st.download_button(
+            label="📥 Preuzmi dnevnik (Excel)",
+            data=towrite,
+            file_name=f"agro_dnevnik_{datetime.now().strftime('%d_%m_%Y')}.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+    with col_del:
+        if st.button("❌ Obriši sve zapise"):
+            st.session_state.dnevnik = []
+            st.rerun()
 else:
-    st.write("Dnevnik je prazan. Zabeležite radove iznad.")
+    st.info("Dnevnik je prazan. Zabeležite radove iznad.")
