@@ -8,25 +8,40 @@ st.set_page_config(page_title="AgroAsistent Pro", layout="wide", page_icon="🌾
 if 'dnevnik' not in st.session_state:
     st.session_state.dnevnik = []
 
-st.title("🌾 AgroAsistent: Lični Savetnik sa Preparatima")
+st.title("🌾 AgroAsistent: Lični Savetnik sa Doziranjem")
+
+# --- SAVET ZA MEŠANJE I KARENCU (FIKSNI INFO) ---
+with st.expander("ℹ️ Uputstvo za mešanje i Karenca (Pročitaj pre rada)"):
+    st.markdown("""
+    *   **Šta je KARENCA?** To je broj dana koji mora proći od prskanja do berbe. **Strogo se pridržavaj ovoga!**
+    *   **Redosled mešanja u prskalici:** 
+        1. Napuni prskalicu do pola vodom.
+        2. Dodaj praškaste preparate (razmuti ih prvo u malo vode).
+        3. Dodaj tečne preparate.
+        4. Dodaj prihranu (đubrivo).
+        5. Dopuni vodom do vrha i dobro promućkaj.
+    *   **Tvoja oprema:** 
+        *   Zaštita (16L baterijska): Doze su izračunate za punu prskalicu.
+        *   Ishrana (10L kanta): Doze su izračunate za jednu kantu.
+    """)
 
 tab1, tab2, tab3 = st.tabs(["🍎 Voćnjak (3. god)", "🥦 Povrtarstvo", "📍 Moja Parcela"])
 
-# --- TAB 1: MEŠOVITI VOĆNJAK ---
+# --- TAB 1: VOĆNJAK ---
 with tab1:
-    st.header("🍎 Saveti i Preparati za Voćnjak")
+    st.header("🍎 Zaštita i Ishrana Voćnjaka")
     v_mesec = st.selectbox("Izaberi mesec:", ["Mart", "April", "Maj", "Jun", "Jul", "Avgust"], key="v_m")
     
     baza_v = {
-        "Mart": "🛡️ **Zaštita:** Plavo prskanje (Bakar). Preparati: **Cuprozin, Bakarni kreč ili Everest**. 🧪 **Ishrana:** KAN 27% (oko 200g po stablu).",
-        "April": "🌸 **Cvetanje (Monilija):** **Chorus, Signum ili Switch**. 🛡️ **Čađava krastavost:** **Score ili Chorus**. 🐜 **Vaši:** **Teppeki ili Perfectthion**.",
-        "Maj": "🛡️ **Zaštita:** **Mancogal ili Captan**. 🐜 **Rutava buba:** Postavljanje plavih posuda sa vodom (bez hemije u cvetu). 🧪 **Prihrana:** **Wuxal Ascofol** (preko lista).",
-        "Jun": "🛡️ **Smotavac:** **Coragen ili Affirm**. 🍄 **Pepelnica:** **Luna Experience ili Topas**. 🧪 **Prihrana:** **Kristalon (Kalcijum)** za čvrstinu ploda.",
-        "Jul": "💦 **Navodnjavanje:** Obavezno! 🛡️ **Grinje:** **Envidor ili Ortus**. 🍎 **Trulež:** **Switch ili Geox** (voditi računa o karenti).",
-        "Avgust": "🛡️ **Pred berbu:** **Teldor ili Bellis** (kratka karenca). 🧺 **Higijena:** Skupljanje opalih plodova."
+        "Mart": "🛡️ **Zaštita:** Cuprozin (50g na 16L). **Karenca:** n/p. 🧪 **Ishrana:** KAN (200g po stablu).",
+        "April": "🌸 **Cvet (Monilija):** Chorus (5g na 16L) ili Signum (10g na 16L). **Karenca:** 7-14 dana.",
+        "Maj": "🛡️ **Zaštita:** Captan (35g na 16L). 🐜 **Vaši:** Teppeki (2g na 16L). **Karenca:** 21 dan.",
+        "Jun": "🐛 **Smotavac:** Coragen (3ml na 16L). 🍄 **Pepelnica:** Luna Experience (10ml na 16L). **Karenca:** 14 dana.",
+        "Jul": "💦 **Navodnjavanje!** 🛡️ **Grinje:** Envidor (10ml na 16L). **Karenca:** 14-21 dan.",
+        "Avgust": "🛡️ **Pred berbu:** Teldor (15ml na 16L). **Karenca:** 1-3 dana (šljiva/breskva)."
     }
     st.info(baza_v[v_mesec])
-    v_rad = st.multiselect("Zapis rada:", ["Prskanje", "Đubrenje", "Navodnjavanje"], key=f"v_r_{v_mesec}")
+    v_rad = st.multiselect("Završen rad:", ["Prskanje", "Đubrenje", "Navodnjavanje"], key=f"v_r_{v_mesec}")
     if st.button("Zapiši rad", key="v_btn"):
         if v_rad:
             st.session_state.dnevnik.append({"Datum": datetime.now().strftime("%d.%m."), "Kultura": f"Voćnjak ({v_mesec})", "Radovi": ", ".join(v_rad)})
@@ -34,57 +49,45 @@ with tab1:
 
 # --- TAB 2: POVRTARSTVO ---
 with tab2:
-    st.header("🥦 Saveti i Preparati za Povrće")
+    st.header("🥦 Povrtarstvo: Doziranje i Karenca")
     tip = st.radio("Mesto uzgoja:", ["Plastenik", "Otvoreno polje"], horizontal=True)
-    p_mesec = st.selectbox("Izaberi mesec:", ["Mart", "April", "Maj", "Jun", "Jul", "Avgust"], key="p_m")
+    p_mesec = st.selectbox("Izaberi mesec:", ["Maj", "Jun", "Jul", "Avgust"], key="p_m")
     
     if tip == "Plastenik":
         kultura = st.selectbox("Povrće:", ["Paradajz", "Paprika", "Krastavac"])
         baza_p = {
             "Paradajz": {
-                "April": "🌿 **Pinciranje:** Zakidanje zaperaka. 🛡️ **Plesan:** **Signum ili Quadris**.",
-                "Maj": "🧪 **Ishrana:** **Fitofert Calcium Organo** (protiv crne pege na vrhu ploda). 🐜 **Trips:** **Exirel ili Laser**.",
-                "Jun": "⚠️ **Plamenjača:** **Ridomil Gold ili Infinito**. 🛡️ **Pepelnica:** **Topas**.",
-                "Jul": "🧺 **Berba:** Voditi računa o karenti! 💦 **Zalivanje:** Svaki drugi dan."
+                "Maj": "🧪 **Ishrana (10L kanta):** Fitofert Calcium (30ml). 🐜 **Vaši:** Laser (8ml na 16L). **Karenca:** 3 dana.",
+                "Jun": "⚠️ **Plamenjača:** Ridomil Gold (40g na 16L). **Karenca:** 21 dan! (Ako je pred berbu koristi Quadris - 3 dana).",
+                "Jul": "🛡️ **Trulež ploda:** Switch (10g na 16L). **Karenca:** 3 dana. 🧪 **Ishrana (10L):** Kristalon Crveni (20g)."
             },
             "Paprika": {
-                "Maj": "🐜 **Vaši i Trips:** **Actara ili Vertical**. 🧪 **Prihrana:** **Kristalon Zeleni** (NPK 20:20:20).",
-                "Jun": "🛡️ **Bakterioze:** **Funguran ili Cuprablau** (manje doze bakra). 💦 **Vlažnost:** Orošavanje staza.",
-                "Jul": "🌶️ **Berba:** Prihrana kalijumom (**Kristalon Crveni**) za boju i težinu."
+                "Jun": "🛡️ **Bakterioza:** Bakarni kreč (30g na 16L). **Karenca:** 14 dana. 🐜 **Trips:** Exirel (10ml na 16L). **Karenca:** 1 dan.",
+                "Jul": "🧪 **Ishrana (10L):** Kristalon Crveni (25g). 🐜 **Vaši:** Afinex (5g na 16L). **Karenca:** 7 dana."
             },
             "Krastavac": {
-                "Maj": "🛡️ **Plamenjača:** **Equation Pro ili Aliette**. 🛡️ **Pepelnica:** **Nimrod**.",
-                "Jun": "🐜 **Grinje (Crveni pauk):** **Abastate ili Envidor**. 🧺 **Berba:** Svakodnevno.",
-                "Jul": "🧪 **Prihrana:** **Wuxal Super** folijarno za kondiciju vreže."
+                "Jun": "⚠️ **Plamenjača:** Equation Pro (10g na 16L). **Karenca:** 3 dana. 🐜 **Grinje:** Abastate (15ml na 16L) + Okvašivač. **Karenca:** 3 dana.",
+                "Jul": "🧺 **Berba:** Svakodnevno. 🧪 **Ishrana (10L):** Wuxal Super (30ml) - folijarno."
             }
         }
     else:
         kultura = st.selectbox("Povrće:", ["Krompir", "Lubenica", "Beli luk", "Crni luk", "Bundeva", "Grašak", "Boranija"])
         baza_p = {
             "Krompir": {
-                "Maj": "🐞 **Zlatica:** **Coragen, Alverde ili Mospilan**. 🚜 **Nagrtanje:** Obavezno.",
-                "Jun": "⚠️ **PLAMENJAČA (posle kiše):** **Ridomil Gold, Consento ili Revus**. 🛡️ **Crna pegavost:** **Antracol**.",
-                "Jul": "💦 **Navodnjavanje:** Presudno za prinos. 🐜 **Moljac:** **Decis**."
-            },
-            "Lubenica": {
-                "Jun": "🛡️ **Plamenjača:** **Bravo ili Quadris**. 🐜 **Vaši:** **Confidor**. 🐝 **Pčele:** Ne prskati u toku dana!",
-                "Jul": "🧪 **Prihrana:** **Fitofert Kristal Kalijum**. 💦 **Zalivanje:** Intenzivno ujutru."
+                "Jun": "⚠️ **PLAMENJAČA:** Ridomil Gold (40g na 16L). **Karenca:** 21 dan. 🐞 **Zlatica:** Coragen (3ml na 16L). **Karenca:** 14 dana.",
+                "Jul": "🛡️ **Plamenjača pred vađenje:** Revus (10ml na 16L). **Karenca:** 7 dana."
             },
             "Crni luk": {
-                "Maj": "⚠️ **Plamenjača:** **Ridomil Gold MZ ili Ridomil Gold R**. 🐜 **Muva:** **Mospilan**.",
-                "Jun": "🛡️ **Rđa:** **Zato ili Score**. 🚜 **Korov:** Ručno čišćenje u ovoj fazi."
-            },
-            "Boranija": {
-                "Jun": "🛡️ **Rđa:** **Mancogal**. 🐜 **Vaši:** **Afinex**. 🧺 **Berba:** Česta berba stimuliše cvetanje.",
-                "Jul": "💦 **Navodnjavanje:** Obavezno u fazi cvetanja. 🛡️ **Grinje:** **Akaristop**."
+                "Maj": "⚠️ **Plamenjača:** Ridomil Gold R (50g na 16L). **Karenca:** 14 dana. 🐜 **Muva:** Mospilan (4g na 16L). **Karenca:** 14 dana.",
+                "Jun": "🛡️ **Zaštita:** Quadris (15ml na 16L). **Karenca:** 7 dana."
             }
         }
 
-    # Prikaz saveta (dodata provera da li postoji podatak za taj mesec)
-    mesecni_savet = baza_p.get(kultura, {}).get(p_mesec, "Nema specifičnih preporuka za ovaj mesec, pratite opšte stanje biljke.")
-    st.warning(f"📌 **{kultura} ({p_mesec}):** {mesecni_savet}")
+    # Prikaz specifičnog saveta
+    rezultat = baza_p.get(kultura, {}).get(p_mesec, "Nema specifičnih podataka. Proverite opšte stanje.")
+    st.warning(f"📌 **{kultura} ({p_mesec}):** {rezultat}")
     
-    p_rad = st.multiselect("Urađeno:", ["Sadnja", "Zaštita", "Prihrana", "Berba"], key=f"p_r_{kultura}_{p_mesec}")
+    p_rad = st.multiselect("Urađeno:", ["Zalivanje sa prihranom", "Zaštita (Prskanje)", "Berba"], key=f"p_r_{kultura}_{p_mesec}")
     if st.button("Zapiši rad", key="p_btn"):
         if p_rad:
             st.session_state.dnevnik.append({"Datum": datetime.now().strftime("%d.%m."), "Kultura": f"{kultura} ({p_mesec})", "Radovi": ", ".join(p_rad)})
@@ -102,6 +105,3 @@ st.markdown("---")
 st.subheader("📓 Dnevnik radova")
 if st.session_state.dnevnik:
     st.table(st.session_state.dnevnik)
-    if st.button("Obriši istoriju"):
-        st.session_state.dnevnik = []
-        st.rerun()
