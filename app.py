@@ -12,11 +12,10 @@ conn = st.connection("gsheets", type=GSheetsConnection)
 
 def zapisi_u_tabelu(kultura, radnja):
     try:
-        # Čitamo tabelu (automatski nalazi list preko GID-a iz Secrets)
-        df = conn.read(ttl=0)
+        # Čitamo list "Dnevnik" - on MORA postojati u Google tabeli
+        df = conn.read(worksheet="Dnevnik", ttl=0)
         df = df.dropna(how='all')
         
-        # Pravimo novi red
         novi_red = pd.DataFrame([{
             "Vremenska_oznaka": datetime.now().strftime("%d.%m.%Y %H:%M"),
             "Korisnik": "Ja",
@@ -24,12 +23,14 @@ def zapisi_u_tabelu(kultura, radnja):
             "Status": radnja
         }])
         
-        # Spajamo i šaljemo
-        final_df = pd.concat([df, novi_red], ignore_index=True)
-        conn.update(data=final_df)
+        finalni_df = pd.concat([df, novi_red], ignore_index=True)
+        
+        # Upisujemo nazad u list "Dnevnik"
+        conn.update(worksheet="Dnevnik", data=finalni_df)
         st.success(f"✅ Sačuvano u Google tabelu!")
+        st.rerun()
     except Exception as e:
-        st.error(f"Greška: {e}")
+        st.error(f"Sistemska greška: Proveri da li se list u Google tabeli zove tačno 'Dnevnik' (latinicom). Detalji: {e}")
 
 st.title("🌾 AgroAsistent: Digitalni Dnevnik")
 
@@ -38,7 +39,7 @@ tab1, tab2 = st.tabs(["🚜 Unos radova", "🛰️ Radar"])
 with tab1:
     c1, c2 = st.columns(2)
     izabrana_kultura = c1.selectbox("Biljka:", ["Paradajz", "Paprika", "Voće", "Krastavac", "Krompir", "TROŠAK"])
-    opis_rada = c2.text_input("Šta si radio/kupio?")
+    opis_rada = c2.text_input("Šta si radio/kupio?", placeholder="Npr. Zalivanje, Prskanje...")
     
     if st.button("SAČUVAJ TRAJNO"):
         if opis_rada:
@@ -47,15 +48,14 @@ with tab1:
             st.warning("Upiši opis rada pre čuvanja.")
 
 with tab2:
-    st.subheader("Radar Kruševac")
     radar_html = """<iframe src="https://vremeradar.rs" width="100%" height="600" style="border:none;"></iframe>"""
     components.html(radar_html, height=620)
 
 # Prikaz istorije
 st.markdown("---")
-st.subheader("📓 Tvoj dnevnik uživo")
+st.subheader("📓 Tvoj dnevnik uživo (Poslednjih 10 unosa)")
 try:
-    prikaz = conn.read(ttl=0)
+    prikaz = conn.read(worksheet="Dnevnik", ttl=0)
     st.dataframe(prikaz.dropna(how='all').tail(10), use_container_width=True)
 except:
-    st.info("Ovde će se pojaviti podaci čim klikneš na 'SAČUVAJ TRAJNO'.")
+    st.info("Podaci će se pojaviti čim napraviš prvi uspešan upis.")
