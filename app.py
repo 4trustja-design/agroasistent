@@ -27,11 +27,16 @@ tab1, tab2, tab3, tab4 = st.tabs(["🍎 Voćnjak (3.g)", "🥦 Povrtarstvo", "�
 # --- TAB 1: VOĆARSTVO ---
 with tab1:
     st.header("🍎 Zaštita i Ishrana Voćnjaka (3. godina)")
-    v_mesec = st.selectbox("Izaberi mesec:", ["Maj", "Jun", "Jul", "Avgust"], key="v_m")
-    saveti_v = {
-        "Maj": "🛡️ **Organski:** Neem ulje (50ml/16L) za vaši. 🧪 **Ishrana:** Bor preko lista za bolju oplodnju.",
-        "Jun": "🐛 **Organski:** Lepinox Plus (15g/16L) - prirodno protiv crva. 🧪 **Ishrana:** Kalcijum (40ml/16L)."
+    v_mesec = st.selectbox("Izaberi mesec:", ["Mart", "April", "Maj", "Jun", "Jul", "Avgust", "Septembar", "Oktobar"], key="v_m")
+        saveti_v = {
+        "Maj": "🛡️ **Zaštita:** Captan (35g na 16L). 🧪 **Ishrana:** Bor preko lista.",
+        "Jun": "🐛 **Smotavac:** Coragen (3ml na 16L). 🧪 **Ishrana:** Kalcijum (40ml/16L).",
+        "Jul": "💦 **Navodnjavanje:** Ključno za formiranje pupoljaka za dogodine.",
+        "Avgust": "🍎 **Berba:** Rani sortiment. 🛡️ **Zaštita:** Paziti na karentu pred berbu.",
+        "Septembar": "🧺 **Berba:** Glavna berba kasnih sorti. 🧹 **Higijena:** Skupljanje trulih plodova.",
+        "Oktobar": "🧪 **Ishrana:** Jesenje đubrenje (Fosfor i Kalijum). 🚜 **Obrada:** Plitko oranje između redova."
     }
+
     st.info(saveti_v.get(v_mesec, "Pratite redovno stanje vlage."))
     v_rad = st.multiselect("Zapis rada:", ["Prskanje", "Đubrenje", "Navodnjavanje"], key=f"v_r_{v_mesec}")
     if st.button("Zapiši rad u voćnjaku", key="v_btn"):
