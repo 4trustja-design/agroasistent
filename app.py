@@ -74,49 +74,70 @@ with tab2:
             st.session_state.dnevnik.append({"Datum": datetime.now().strftime("%d.%m."), "Kultura": f"{kultura} ({tip})", "Radovi": ", ".join(p_rad)})
             st.success("Dodato u digitalnu knjigu!")
 
-# --- TAB 3: MAPA I METEO ALARM ---
+# --- TAB 3: MAPA I METEO ALARM (POPRAVLJENO) ---
 with tab3:
     st.header("📍 Pametni Alarm za prskanje")
+    st.write("Kliknite na mapu da vidite prognozu za vašu tačku:")
+    
     m = folium.Map(location=[44.0165, 21.0059], zoom_start=7)
     folium.LatLngPopup().add_to(m)
-    izlaz_mape = st_folium(m, width=700, height=400, key="agromapa_v5")
+    
+    izlaz_mape = st_folium(m, width=700, height=400, key="agro_mapa_v6")
 
+    # PROVERA: Pokreni prognozu SAMO ako je korisnik kliknuo na mapu
     if izlaz_mape and izlaz_mape.get('last_clicked'):
-        lat, lon = izlaz_mape['last_clicked']['lat'], izlaz_mape['last_clicked']['lng']
+        lat = izlaz_mape['last_clicked']['lat']
+        lon = izlaz_mape['last_clicked']['lng']
+        
         if meteo_key:
-            url = f"https://openweathermap.org{lat}&lon={lon}&appid={meteo_key}&units=metric&lang=sr"
-            d = requests.get(url).json()
-            if "main" in d:
-                vlaga = d['main']['humidity']
-                temp = d['main']['temp']
-                st.metric("Vlažnost vazduha", f"{vlaga}%")
-                if vlaga > 80 and temp > 15:
-                    st.error("🚨 **ALARM:** Visoka vlaga! Idealno za plamenjaču. Poprskaj čim se list osuši!")
+            try:
+                # Link se pravi tek OVDE unutar if bloka
+                url = f"https://openweathermap.org{lat}&lon={lon}&appid={meteo_key}&units=metric&lang=sr"
+                response = requests.get(url)
+                d = response.json()
+                
+                if response.status_code == 200:
+                    vlaga = d['main']['humidity']
+                    temp = d['main']['temp']
+                    st.metric("Trenutna Vlažnost", f"{vlaga}%")
+                    st.metric("Temperatura", f"{temp}°C")
+                    
+                    if vlaga > 80 and temp > 15:
+                        st.error("🚨 **ALARM:** Visoka vlaga! Idealno za plamenjaču. Poprskaj čim se list osuši!")
+                    else:
+                        st.success("✅ Uslovi su stabilni za organsku preventivu.")
                 else:
-                    st.success("✅ Uslovi su stabilni za organsku preventivu.")
-            else: st.error("Meteo ključ neispravan.")
+                    st.error("Meteo ključ nije ispravan ili nije aktiviran.")
+            except Exception as e:
+                st.error(f"Greška pri učitavanju vremena.")
+        else:
+            st.warning("Unesite OpenWeather ključ u Sidebar (levo) da vidite alarm.")
 
-# --- TAB 4: TROŠKOVNIK ---
+# --- TAB 4: TROŠKOVNIK (POPRAVLJENO) ---
 with tab4:
     st.header("💰 Troškovi (Creva, Seme, Preparati)")
     c1, c2, c3 = st.columns(3)
-    with c1: stavka = st.text_input("Naziv stavke:")
+    with c1: stavka = st.text_input("Naziv stavke (npr. Creva 16mm):")
     with c2: kol = st.number_input("Količina:", min_value=1.0, value=1.0)
     with c3: cena = st.number_input("Cena (RSD):", min_value=0.0, value=0.0)
     
     if st.button("Dodaj trošak"):
-        st.session_state.troskovi.append({"Stavka": stavka, "Iznos (RSD)": kol * cena})
-        st.success("Trošak dodat!")
+        if stavka:
+            st.session_state.troskovi.append({"Stavka": stavka, "Iznos (RSD)": kol * cena})
+            st.success(f"Dodato: {stavka}")
+        else:
+            st.warning("Unesite naziv stavke!")
 
     if st.session_state.troskovi:
         df_t = pd.DataFrame(st.session_state.troskovi)
         st.table(df_t)
-        st.subheader(f"Ukupno uloženo: {df_t['Iznos (RSD)'].sum():,.2f} RSD")
+        ukupno = df_t['Iznos (RSD)'].sum()
+        st.subheader(f"Ukupna investicija: {ukupno:,.2f} RSD")
 
 # --- DNEVNIK I EXPORT NA DNU ---
 st.markdown("---")
-st.subheader("📓 Digitalna knjiga polja")
 if st.session_state.dnevnik:
+    st.subheader("📓 Digitalna knjiga polja")
     df_d = pd.DataFrame(st.session_state.dnevnik)
     st.dataframe(df_d, use_container_width=True)
     
@@ -124,5 +145,3 @@ if st.session_state.dnevnik:
     df_d.to_excel(towrite, index=False, engine='xlsxwriter')
     towrite.seek(0)
     st.download_button("📥 Preuzmi Dnevnik (Excel)", data=towrite, file_name="agro_dnevnik.xlsx")
-else:
-    st.info("Dnevnik je prazan. Zabeležite radove u tabovima iznad.")
