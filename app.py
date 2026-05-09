@@ -2,7 +2,7 @@ import streamlit as st
 import requests
 from datetime import datetime, timedelta
 
-st.set_page_config(page_title="AgroAsistent V3.3", layout="wide")
+st.set_page_config(page_title="AgroAsistent V3.3.1", layout="wide")
 
 # =========================
 # SECRETS
@@ -49,16 +49,13 @@ def alarms(kultura, w):
         out.append(("RIZIK", "Visoka vlaga → gljivice"))
 
     if w["wind"] > 15:
-        out.append(("KRITIČNO", "Jak vetar → zabrana prskanja"))
+        out.append(("KRITIČNO", "Jak vetar"))
 
     if kultura == "Paradajz" and w["hum"] > 80:
-        out.append(("RIZIK", "Plamenjača rizik"))
+        out.append(("RIZIK", "Plamenjača"))
 
     if kultura == "Krastavac" and w["hum"] > 80:
-        out.append(("RIZIK", "Pepelnica rizik"))
-
-    if kultura == "Paprika" and w["temp"] > 32:
-        out.append(("RIZIK", "Toplotni stres"))
+        out.append(("RIZIK", "Pepelnica"))
 
     return out
 
@@ -84,13 +81,6 @@ def split(a):
 
 if "spray" not in st.session_state:
     st.session_state.spray = []
-
-
-def add_spray(name, days):
-    st.session_state.spray.append({
-        "name": name,
-        "end": datetime.now() + timedelta(days=days)
-    })
 
 
 def karenca():
@@ -130,10 +120,51 @@ povrce = {
 }
 
 # =========================
+# PREPARATI (NOVO)
+# =========================
+
+preparati = {
+
+    "Paradajz": [
+        ("Bakarni preparat (organski ili hemijski)", 
+         "Preventiva protiv plamenjače. Prskati ujutru ili uveče, ne po suncu.",
+         "3–7 dana (zavisi od preparata)"),
+
+        ("Kalcijum (folijarno đubrivo)",
+         "Poboljšava čvrstinu ploda i sprečava trulež. Primena 1x nedeljno.",
+         "0 dana"),
+
+        ("Mankozeb (hemija)",
+         "Snažna zaštita od gljivica, koristiti preventivno, ne čekati infekciju.",
+         "7–14 dana")
+    ],
+
+    "Paprika": [
+        ("Kalcijum + bor",
+         "Jača cvet i sprečava opadanje plodova. Prskati u fazi cvetanja.",
+         "0 dana"),
+
+        ("Sumporni preparat",
+         "Protiv pepelnice i grinja. Koristiti u suvom i toplom periodu.",
+         "3–5 dana")
+    ],
+
+    "Krastavac": [
+        ("Sumpor",
+         "Protiv pepelnice. Ne koristiti na visokim temperaturama.",
+         "3–5 dana"),
+
+        ("Biološki fungicid",
+         "Blaga zaštita, pogodan za organsku proizvodnju.",
+         "0 dana")
+    ]
+}
+
+# =========================
 # UI
 # =========================
 
-st.title("🌾 AgroAsistent V3.3 — Stabilna verzija")
+st.title("🌾 AgroAsistent V3.3.1")
 
 tab1, tab2, tab3, tab4, tab5 = st.tabs([
     "🚨 Danas",
@@ -144,12 +175,12 @@ tab1, tab2, tab3, tab4, tab5 = st.tabs([
 ])
 
 # =========================
-# TAB 1 — DANAS
+# TAB 1
 # =========================
 
 with tab1:
 
-    st.header("🚨 Pametni alarmi + stanje")
+    st.header("🚨 Pametni alarmi")
 
     w = weather()
 
@@ -159,7 +190,6 @@ with tab1:
     )
 
     a = alarms(kultura, w)
-
     hitno, rizik, info = split(a)
 
     st.subheader("🔥 HITNO")
@@ -175,7 +205,7 @@ with tab1:
         st.info(x)
 
 # =========================
-# TAB 2 — VOĆNJAK
+# TAB 2
 # =========================
 
 with tab2:
@@ -186,7 +216,7 @@ with tab2:
     st.info(vocnjak[mesec])
 
 # =========================
-# TAB 3 — POVRĆE
+# TAB 3 — POVRĆE + PREPARATI
 # =========================
 
 with tab3:
@@ -201,20 +231,28 @@ with tab3:
         list(povrce.keys())
     )
 
-    plan_k = {
-        "Paradajz": "Plamenjača + kalcijum",
-        "Paprika": "Stres + trips",
-        "Krastavac": "Pepelnica"
-    }
+    st.subheader("📌 Osnovni plan")
+    st.info(povrce[mesec])
 
-    st.subheader("📌 Kultura")
-    st.info(plan_k[kultura])
+    st.subheader("🧪 Preporučeni preparati")
 
-    st.subheader("📅 Sezona")
-    st.write(povrce[mesec])
+    if kultura in preparati:
+
+        for naziv, opis, karenca_dana in preparati[kultura]:
+
+            st.markdown(f"""
+### {naziv}
+
+{opis}
+
+⏳ Karenca: **{karenca_dana}**
+""")
+
+    else:
+        st.info("Nema definisanih preparata za ovu kulturu.")
 
 # =========================
-# TAB 4 — VREME
+# TAB 4
 # =========================
 
 with tab4:
@@ -230,11 +268,8 @@ with tab4:
         st.metric("Vlažnost", f"{w['hum']} %")
         st.metric("Vetар", f"{w['wind']} km/h")
 
-        if w["rain"]:
-            st.warning("Kiša u toku / najavljena")
-
 # =========================
-# TAB 5 — KARENCA
+# TAB 5
 # =========================
 
 with tab5:
