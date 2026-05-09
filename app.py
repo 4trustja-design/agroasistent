@@ -1,9 +1,9 @@
 import streamlit as st
 import requests
 import pandas as pd
-from datetime import datetime, timedelta
+from datetime import datetime
 
-st.set_page_config(page_title="AgroAsistent V3.3.2", layout="wide")
+st.set_page_config(page_title="AgroAsistent V3.3.3", layout="wide")
 
 # =========================
 # WEATHER KEY
@@ -15,9 +15,6 @@ WEATHER_KEY = st.secrets["OPENWEATHER_API_KEY"]
 # =========================
 if "log" not in st.session_state:
     st.session_state.log = []
-
-if "spray" not in st.session_state:
-    st.session_state.spray = []
 
 # =========================
 # WEATHER
@@ -81,7 +78,7 @@ def split(a):
     return hitno, rizik, info
 
 # =========================
-# LOG FUNKCIJA
+# LOG
 # =========================
 def log_action(kultura, preparat):
 
@@ -92,64 +89,77 @@ def log_action(kultura, preparat):
     })
 
 # =========================
-# KARENCA
-# =========================
-def karenca():
-
-    now = datetime.now()
-    active = []
-
-    for s in st.session_state.spray:
-
-        diff = (s["end"] - now).days
-
-        if diff > 0:
-            active.append((s["name"], diff))
-
-    return active
-
-# =========================
-# PLANOVI
+# PLANOVI (FULL GODINA)
 # =========================
 
 vocnjak = {
-    "Mart": "Start vegetacije + bakar + rezidba",
+    "Januar": "Mirovanje",
+    "Februar": "Rezidba",
+    "Mart": "Start vegetacije + zaštita",
     "April": "Preventiva bolesti",
     "Maj": "Cvetanje + kalcijum",
     "Jun": "Rast ploda",
     "Jul": "Zalivanje + stres",
-    "Avgust": "Berba"
+    "Avgust": "Berba",
+    "Septembar": "Kasna berba",
+    "Oktobar": "Jesenje đubrenje",
+    "Novembar": "Bakarna zaštita",
+    "Decembar": "Mirovanje"
 }
 
 povrce = {
+    "Januar": "Planiranje",
+    "Februar": "Priprema rasada",
     "Mart": "Setva",
     "April": "Rasađivanje",
-    "Maj": "Rast",
+    "Maj": "Rast biljke",
     "Jun": "Zaštita",
-    "Jul": "Zalivanje",
-    "Avgust": "Berba"
+    "Jul": "Intenzivno zalivanje",
+    "Avgust": "Berba",
+    "Septembar": "Jesenska setva",
+    "Oktobar": "Završne kulture",
+    "Novembar": "Čišćenje zemljišta",
+    "Decembar": "Planiranje"
 }
 
 # =========================
-# PREPARATI
+# PREPARATI (PO BILJCI)
 # =========================
 
 preparati = {
 
     "Paradajz": [
-        ("Bakarni preparat", "Preventiva protiv plamenjače. Prskati uveče ili rano ujutru.", "3–7 dana"),
-        ("Kalcijum", "Jača plod i sprečava trulež. 1x nedeljno.", "0 dana"),
-        ("Mankozeb", "Jaka hemijska zaštita protiv gljivica.", "7–14 dana")
+        ("Bakarni preparat",
+         "Preventiva protiv plamenjače. Prskati rano ujutru ili uveče.",
+         "3–7 dana"),
+
+        ("Kalcijum",
+         "Sprečava trulež vrha ploda. 1x nedeljno.",
+         "0 dana"),
+
+        ("Mankozeb",
+         "Hemijska zaštita protiv gljivičnih bolesti.",
+         "7–14 dana")
     ],
 
     "Paprika": [
-        ("Kalcijum + bor", "Bolje cvetanje i manje opadanja ploda.", "0 dana"),
-        ("Sumpor", "Protiv pepelnice, koristiti u suvom vremenu.", "3–5 dana")
+        ("Kalcijum + bor",
+         "Jača cvet i smanjuje opadanje plodova.",
+         "0 dana"),
+
+        ("Sumpor",
+         "Protiv pepelnice i grinja.",
+         "3–5 dana")
     ],
 
     "Krastavac": [
-        ("Sumpor", "Pepelnica zaštita, ne koristiti na +30°C.", "3–5 dana"),
-        ("Biološki fungicid", "Organska zaštita, blaga primena.", "0 dana")
+        ("Sumpor",
+         "Pepelnica kontrola. Ne koristiti na visokim temperaturama.",
+         "3–5 dana"),
+
+        ("Biološki fungicid",
+         "Organska zaštita biljke.",
+         "0 dana")
     ]
 }
 
@@ -157,15 +167,15 @@ preparati = {
 # UI
 # =========================
 
-st.title("🌾 AgroAsistent V3.3.2")
+st.title("🌾 AgroAsistent V3.3.3")
 
 tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
     "🚨 Danas",
     "🍎 Voćnjak",
     "🥦 Povrće",
     "🌤️ Vreme",
-    "⏳ Karenca",
-    "📊 Dnevnik"
+    "📊 Karenca",
+    "📓 Dnevnik"
 ])
 
 # =========================
@@ -231,22 +241,20 @@ with tab3:
 
     st.subheader("🧪 Preparati + evidencija")
 
-    if kultura in preparati:
+    for naziv, opis, karenca in preparati[kultura]:
 
-        for naziv, opis, karenca in preparati[kultura]:
+        col1, col2 = st.columns([0.1, 0.9])
 
-            col1, col2 = st.columns([0.1, 0.9])
+        with col1:
 
-            with col1:
+            if st.checkbox("", key=f"{kultura}_{naziv}"):
 
-                if st.checkbox("", key=f"{kultura}_{naziv}"):
+                log_action(kultura, naziv)
+                st.success("Zabeleženo")
 
-                    log_action(kultura, naziv)
-                    st.success("Zabeleženo")
+        with col2:
 
-            with col2:
-
-                st.markdown(f"""
+            st.markdown(f"""
 ### {naziv}
 
 {opis}
@@ -267,7 +275,7 @@ with tab4:
     if not w:
         st.error("Nema podataka")
     else:
-        st.metric("Temp", f"{w['temp']} °C")
+        st.metric("Temperatura", f"{w['temp']} °C")
         st.metric("Vlaga", f"{w['hum']} %")
         st.metric("Vetar", f"{w['wind']} km/h")
 
@@ -277,13 +285,8 @@ with tab4:
 
 with tab5:
 
-    st.header("⏳ Karenca")
-
-    if not st.session_state.spray:
-        st.success("Nema aktivne karence")
-
-    for s in st.session_state.spray:
-        st.warning(f"{s['name']} → aktivno")
+    st.header("📊 Karenca")
+    st.info("Evidencija se vodi kroz označene preparate.")
 
 # =========================
 # TAB 6
@@ -291,7 +294,7 @@ with tab5:
 
 with tab6:
 
-    st.header("📊 Dnevnik rada")
+    st.header("📓 Dnevnik rada")
 
     if not st.session_state.log:
         st.info("Nema unosa")
@@ -299,3 +302,4 @@ with tab6:
     else:
         df = pd.DataFrame(st.session_state.log)
         st.dataframe(df, use_container_width=True)
+    
