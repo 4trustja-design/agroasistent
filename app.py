@@ -276,10 +276,12 @@ with tab3:
                     kljucne_reci_ai = ["biostimulator", "kalcijum", "bor", "sistemična", "fungicid"]
 
                        if any(k in naziv.lower() for k in kljucne_reci_ai):
-                        st.subheader("🤖 AI preporuka")
+                        st.subheader("🤖 AI preporuka preparata")
 
-                        for p in ai_pretraga_preparata(naziv):
-                            st.write("• " + p)
+                         termin = f"{naziv} {kultura} {mesec}"
+
+                         for p in ai_pretraga_preparata(termin):
+    st.write("• " + p)
 
             with col2:
 
