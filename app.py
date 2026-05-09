@@ -1,21 +1,28 @@
 import streamlit as st
 import requests
+import pandas as pd
 from datetime import datetime, timedelta
 
-st.set_page_config(page_title="AgroAsistent V3.3.1", layout="wide")
+st.set_page_config(page_title="AgroAsistent V3.3.2", layout="wide")
 
 # =========================
-# SECRETS
+# WEATHER KEY
 # =========================
-
 WEATHER_KEY = st.secrets["OPENWEATHER_API_KEY"]
+
+# =========================
+# SESSION LOG
+# =========================
+if "log" not in st.session_state:
+    st.session_state.log = []
+
+if "spray" not in st.session_state:
+    st.session_state.spray = []
 
 # =========================
 # WEATHER
 # =========================
-
 def weather():
-
     try:
         url = f"https://api.openweathermap.org/data/2.5/weather?q=Krusevac,RS&appid={WEATHER_KEY}&units=metric"
         r = requests.get(url, timeout=5)
@@ -27,14 +34,12 @@ def weather():
             "wind": d["wind"]["speed"] * 3.6,
             "rain": "rain" in d
         }
-
     except:
         return None
 
 # =========================
 # ALARMI
 # =========================
-
 def alarms(kultura, w):
 
     out = []
@@ -76,13 +81,19 @@ def split(a):
     return hitno, rizik, info
 
 # =========================
+# LOG FUNKCIJA
+# =========================
+def log_action(kultura, preparat):
+
+    st.session_state.log.append({
+        "datum": datetime.now().strftime("%d.%m.%Y %H:%M"),
+        "kultura": kultura,
+        "radnja": preparat
+    })
+
+# =========================
 # KARENCA
 # =========================
-
-if "spray" not in st.session_state:
-    st.session_state.spray = []
-
-
 def karenca():
 
     now = datetime.now()
@@ -120,43 +131,25 @@ povrce = {
 }
 
 # =========================
-# PREPARATI (NOVO)
+# PREPARATI
 # =========================
 
 preparati = {
 
     "Paradajz": [
-        ("Bakarni preparat (organski ili hemijski)", 
-         "Preventiva protiv plamenjače. Prskati ujutru ili uveče, ne po suncu.",
-         "3–7 dana (zavisi od preparata)"),
-
-        ("Kalcijum (folijarno đubrivo)",
-         "Poboljšava čvrstinu ploda i sprečava trulež. Primena 1x nedeljno.",
-         "0 dana"),
-
-        ("Mankozeb (hemija)",
-         "Snažna zaštita od gljivica, koristiti preventivno, ne čekati infekciju.",
-         "7–14 dana")
+        ("Bakarni preparat", "Preventiva protiv plamenjače. Prskati uveče ili rano ujutru.", "3–7 dana"),
+        ("Kalcijum", "Jača plod i sprečava trulež. 1x nedeljno.", "0 dana"),
+        ("Mankozeb", "Jaka hemijska zaštita protiv gljivica.", "7–14 dana")
     ],
 
     "Paprika": [
-        ("Kalcijum + bor",
-         "Jača cvet i sprečava opadanje plodova. Prskati u fazi cvetanja.",
-         "0 dana"),
-
-        ("Sumporni preparat",
-         "Protiv pepelnice i grinja. Koristiti u suvom i toplom periodu.",
-         "3–5 dana")
+        ("Kalcijum + bor", "Bolje cvetanje i manje opadanja ploda.", "0 dana"),
+        ("Sumpor", "Protiv pepelnice, koristiti u suvom vremenu.", "3–5 dana")
     ],
 
     "Krastavac": [
-        ("Sumpor",
-         "Protiv pepelnice. Ne koristiti na visokim temperaturama.",
-         "3–5 dana"),
-
-        ("Biološki fungicid",
-         "Blaga zaštita, pogodan za organsku proizvodnju.",
-         "0 dana")
+        ("Sumpor", "Pepelnica zaštita, ne koristiti na +30°C.", "3–5 dana"),
+        ("Biološki fungicid", "Organska zaštita, blaga primena.", "0 dana")
     ]
 }
 
@@ -164,14 +157,15 @@ preparati = {
 # UI
 # =========================
 
-st.title("🌾 AgroAsistent V3.3.1")
+st.title("🌾 AgroAsistent V3.3.2")
 
-tab1, tab2, tab3, tab4, tab5 = st.tabs([
+tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
     "🚨 Danas",
     "🍎 Voćnjak",
     "🥦 Povrće",
     "🌤️ Vreme",
-    "⏳ Karenca"
+    "⏳ Karenca",
+    "📊 Dnevnik"
 ])
 
 # =========================
@@ -190,6 +184,7 @@ with tab1:
     )
 
     a = alarms(kultura, w)
+
     hitno, rizik, info = split(a)
 
     st.subheader("🔥 HITNO")
@@ -216,7 +211,7 @@ with tab2:
     st.info(vocnjak[mesec])
 
 # =========================
-# TAB 3 — POVRĆE + PREPARATI
+# TAB 3
 # =========================
 
 with tab3:
@@ -231,25 +226,33 @@ with tab3:
         list(povrce.keys())
     )
 
-    st.subheader("📌 Osnovni plan")
+    st.subheader("📌 Plan")
     st.info(povrce[mesec])
 
-    st.subheader("🧪 Preporučeni preparati")
+    st.subheader("🧪 Preparati + evidencija")
 
     if kultura in preparati:
 
-        for naziv, opis, karenca_dana in preparati[kultura]:
+        for naziv, opis, karenca in preparati[kultura]:
 
-            st.markdown(f"""
+            col1, col2 = st.columns([0.1, 0.9])
+
+            with col1:
+
+                if st.checkbox("", key=f"{kultura}_{naziv}"):
+
+                    log_action(kultura, naziv)
+                    st.success("Zabeleženo")
+
+            with col2:
+
+                st.markdown(f"""
 ### {naziv}
 
 {opis}
 
-⏳ Karenca: **{karenca_dana}**
+⏳ Karenca: **{karenca}**
 """)
-
-    else:
-        st.info("Nema definisanih preparata za ovu kulturu.")
 
 # =========================
 # TAB 4
@@ -264,9 +267,9 @@ with tab4:
     if not w:
         st.error("Nema podataka")
     else:
-        st.metric("Temperatura", f"{w['temp']} °C")
-        st.metric("Vlažnost", f"{w['hum']} %")
-        st.metric("Vetар", f"{w['wind']} km/h")
+        st.metric("Temp", f"{w['temp']} °C")
+        st.metric("Vlaga", f"{w['hum']} %")
+        st.metric("Vetar", f"{w['wind']} km/h")
 
 # =========================
 # TAB 5
@@ -276,10 +279,23 @@ with tab5:
 
     st.header("⏳ Karenca")
 
-    data = karenca()
-
-    if not data:
+    if not st.session_state.spray:
         st.success("Nema aktivne karence")
 
-    for n, d in data:
-        st.warning(f"{n} → {d} dana")
+    for s in st.session_state.spray:
+        st.warning(f"{s['name']} → aktivno")
+
+# =========================
+# TAB 6
+# =========================
+
+with tab6:
+
+    st.header("📊 Dnevnik rada")
+
+    if not st.session_state.log:
+        st.info("Nema unosa")
+
+    else:
+        df = pd.DataFrame(st.session_state.log)
+        st.dataframe(df, use_container_width=True)
