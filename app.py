@@ -4,7 +4,7 @@ import requests
 import base64
 from datetime import datetime, timedelta
 
-st.set_page_config(page_title="AgroAsistent V2.2 FIX", layout="wide")
+st.set_page_config(page_title="AgroAsistent V3", layout="wide")
 
 # =========================
 # SECRETS
@@ -87,22 +87,22 @@ def weather():
 
 
 # =========================
-# AGRONOMSKE ODLUKE
+# AGRO ODLUKE
 # =========================
 
 def agro_odluke(t, h, w, r):
 
-    res = []
+    out = []
 
-    res.append(("Prskanje", "NE" if (r or h > 85 or w > 15) else "DA"))
-    res.append(("Zalivanje", "NE" if r else "PO POTREBI"))
-    res.append(("Rizik bolesti", "VISOK" if h > 85 else "SREDNJI"))
+    out.append(("Prskanje", "NE" if (r or h > 85 or w > 15) else "DA"))
+    out.append(("Zalivanje", "NE" if r else "PO POTREBI"))
+    out.append(("Rizik bolesti", "VISOK" if h > 85 else "SREDNJI"))
 
-    return res
+    return out
 
 
 # =========================
-# AI KAMERA
+# AI KAMERA (OFFLINE SMART LOGIC)
 # =========================
 
 def ai_camera(kultura, simptom, vlaga, temp):
@@ -117,21 +117,26 @@ def ai_camera(kultura, simptom, vlaga, temp):
     bolesti = {
 
         "Paradajz": {
-            "Žute fleke": ("Plamenjača", 0.9),
-            "Bele tačke": ("Pepelnica", 0.7)
+            "Žute fleke": ("Plamenjača", 0.90),
+            "Bele tačke": ("Pepelnica", 0.75)
         },
 
         "Paprika": {
-            "Sušenje lista": ("Bakterioza", 0.8)
+            "Sušenje lista": ("Bakterioza", 0.80)
+        },
+
+        "Krastavac": {
+            "Žutilo lista": ("Virus / stres", 0.70)
         }
     }
 
     if kultura in bolesti and simptom in bolesti[kultura]:
 
-        b, base = bolesti[kultura][simptom]
-        conf = min(0.5 + base + score * 0.1, 0.98)
+        bolest, base = bolesti[kultura][simptom]
 
-        return b, round(conf, 2)
+        confidence = min(0.5 + base + (score * 0.1), 0.97)
+
+        return bolest, round(confidence, 2)
 
     return None, 0
 
@@ -140,12 +145,12 @@ def ai_camera(kultura, simptom, vlaga, temp):
 # KARANCA
 # =========================
 
-def add_prskanje(p, d):
+def add_prskanje(preparat, karenca_dani):
 
     st.session_state.prskanja.append({
-        "p": p,
+        "p": preparat,
         "date": datetime.now(),
-        "karenca": d
+        "karenca": karenca_dani
     })
 
 
@@ -181,7 +186,7 @@ def add_reminder(text, days):
 # UI
 # =========================
 
-st.title("🌾 AgroAsistent V2.2 FIX")
+st.title("🌾 AgroAsistent V3 — Stabilni Sistem")
 
 tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
     "🍎 Voćnjak",
@@ -198,22 +203,22 @@ tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
 
 with tab1:
 
-    st.header("🍎 Voćnjak (3 godine)")
+    st.header("🍎 Mešoviti voćnjak")
 
-    mesec_v = st.selectbox(
+    mesec = st.selectbox(
         "Mesec",
         ["Maj", "Jun", "Jul", "Avgust"],
         key="vocnjak_mesec"
     )
 
     plan = {
-        "Maj": "Captan + Bor",
-        "Jun": "Coragen + Kalcijum",
-        "Jul": "Stres + voda",
-        "Avgust": "Berba + Teldor"
+        "Maj": "Start vegetacije + zaštita (Captan + Bor)",
+        "Jun": "Rast ploda (Coragen + Kalcijum)",
+        "Jul": "Stres + navodnjavanje",
+        "Avgust": "Berba + završna zaštita (Teldor)"
     }
 
-    st.info(plan[mesec_v])
+    st.info(plan[mesec])
 
 # =========================
 # POVRĆE
@@ -223,27 +228,27 @@ with tab2:
 
     st.header("🥦 Povrće")
 
-    kultura_p = st.selectbox(
+    kultura = st.selectbox(
         "Kultura",
         ["Paradajz", "Paprika", "Krastavac", "Krompir", "Luk"],
         key="povrce_kultura"
     )
 
-    mesec_p = st.selectbox(
+    mesec = st.selectbox(
         "Mesec",
         ["Maj", "Jun", "Jul", "Avgust"],
         key="povrce_mesec"
     )
 
-    plan_p = {
-        "Paradajz": "Kalcijum + zaštita",
-        "Paprika": "Prihrana + trips",
-        "Krastavac": "Pepelnica kontrola",
+    plan = {
+        "Paradajz": "Kalcijum + zaštita lista",
+        "Paprika": "Prihrana + trips kontrola",
+        "Krastavac": "Pepelnica preventiva",
         "Krompir": "Zlatica + fungicid",
         "Luk": "Bakarna zaštita"
     }
 
-    st.info(plan_p.get(kultura_p, "Prati stanje"))
+    st.info(plan.get(kultura, "Prati stanje"))
 
     rad = st.multiselect(
         "Radovi",
@@ -251,10 +256,11 @@ with tab2:
         key="povrce_rad"
     )
 
-    if st.button("Sačuvaj povrće"):
+    if st.button("Sačuvaj rad"):
 
         if rad:
-            save_github(kultura_p, ", ".join(rad))
+            save_github(kultura, ", ".join(rad))
+            st.success("Sačuvano")
 
 # =========================
 # VREME
@@ -266,14 +272,14 @@ with tab3:
 
     if w:
 
-        st.metric("Temp", w["temp"])
+        st.metric("Temperatura", w["temp"])
         st.metric("Vlaga", w["hum"])
 
         for n, o in agro_odluke(w["temp"], w["hum"], w["wind"], w["rain"]):
             st.info(f"{n}: {o}")
 
         if w["temp"] > 30:
-            add_reminder("Zalivanje jutro/veče", 0)
+            add_reminder("Zalivanje rano ujutru", 0)
 
 # =========================
 # AI KAMERA
@@ -281,42 +287,43 @@ with tab3:
 
 with tab4:
 
-    st.header("📸 AI Kamera")
+    st.header("📸 AI Kamera (Offline)")
 
     img = st.camera_input("Slikaj biljku")
 
-    kultura = st.selectbox("Kultura", ["Paradajz", "Paprika"], key="ai_kultura")
-    simptom = st.selectbox("Simptom", ["Žute fleke", "Bele tačke", "Sušenje lista"], key="ai_simptom")
+    kultura = st.selectbox("Kultura", ["Paradajz", "Paprika", "Krastavac"], key="ai_kultura")
+    simptom = st.selectbox("Simptom", ["Žute fleke", "Bele tačke", "Sušenje lista", "Žutilo lista"], key="ai_simptom")
 
     if st.button("Analiza"):
 
         w = weather()
 
-        b, conf = ai_camera(
+        bolest, conf = ai_camera(
             kultura,
             simptom,
             w["hum"] if w else 70,
             w["temp"] if w else 20
         )
 
-        if b:
+        if bolest:
 
-            st.error(b)
-            st.info(f"Tačnost: {conf*100}%")
+            st.error(f"Bolest: {bolest}")
+            st.info(f"Pouzdanost: {conf * 100}%")
 
-            chem = {
+            tretmani = {
                 "Plamenjača": ("Ridomil", 14),
                 "Pepelnica": ("Topas", 7),
-                "Bakterioza": ("Champion", 7)
+                "Bakterioza": ("Champion", 7),
+                "Virus / stres": ("Biostimulator", 0)
             }
 
-            if b in chem:
+            if bolest in tretmani:
 
-                p, d = chem[b]
+                p, d = tretmani[bolest]
 
                 st.warning(f"{p} → karenca {d} dana")
 
-                if st.button("Primeni"):
+                if st.button("Primeni tretman"):
                     add_prskanje(p, d)
 
 # =========================
@@ -336,7 +343,7 @@ with tab5:
 
 with tab6:
 
-    st.header("📊 Analiza")
+    st.header("📊 Analiza prinosa")
 
     try:
 
@@ -346,4 +353,4 @@ with tab6:
         st.bar_chart(df["Kultura"].value_counts())
 
     except:
-        st.info("Nema podataka")
+        st.info("Nema podataka još")
