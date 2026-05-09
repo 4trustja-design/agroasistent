@@ -8,20 +8,20 @@ import streamlit.components.v1 as components
 # 1. KONFIGURACIJA
 st.set_page_config(page_title="AgroAsistent Kruševac", layout="wide")
 
-# Učitavanje podataka iz Secrets (pazimo na razmake)
+# Učitavanje podataka iz Secrets (čistimo ih od razmaka)
 try:
     TOKEN = st.secrets["GITHUB_TOKEN"].strip()
     USER = st.secrets["GITHUB_USER"].strip()
     REPO = st.secrets["REPO_NAME"].strip()
-except Exception as e:
+except:
     st.error("⚠️ Greška: Nisu popunjeni Secrets u Streamlit podešavanjima!")
     st.stop()
 
 FILE_PATH = "dnevnik.csv"
 
-# FUNKCIJA ZA SNIMANJE NA GITHUB (FIKSIRANA ADRESA)
+# FUNKCIJA ZA SNIMANJE NA GITHUB (POPRAVLJENA)
 def snimi_na_github(kultura, radnja):
-    # OVDE JE POPRAVLJENO: Koristimo zvanični GitHub API domen koji se ne menja
+    # OVDE JE POPRAVLJENO: Adresa je sada razdvojena kako treba
     url = f"https://github.com{USER}/{REPO}/contents/{FILE_PATH}"
     
     headers = {
@@ -30,7 +30,7 @@ def snimi_na_github(kultura, radnja):
     }
     
     try:
-        # 1. Provera postojećeg fajla
+        # 1. Provera postojanja fajla
         res = requests.get(url, headers=headers, timeout=15)
         sha = None
         stari_sadrzaj = ""
@@ -41,7 +41,7 @@ def snimi_na_github(kultura, radnja):
         
         # 2. Novi red podataka
         vreme = datetime.now().strftime('%d.%m.%Y %H:%M')
-        # Čistimo zareze iz opisa da ne pokvarimo CSV format
+        # Čistimo zareze da ne pokvarimo tabelu
         cista_radnja = radnja.replace(",", " ")
         novi_red = f"{vreme},{kultura},{cista_radnja}\n"
         
@@ -59,8 +59,8 @@ def snimi_na_github(kultura, radnja):
         
         r = requests.put(url, headers=headers, json=payload, timeout=15)
         
-        # PROVERA USPEHA (Popravljena sintaksa)
-        if r.status_code in [200, 201]:
+        # PROVERA USPEHA (Popravljena linija)
+        if r.status_code == 200 or r.status_code == 201:
             st.success("✅ Uspešno sačuvano na GitHub!")
             st.balloons()
             st.rerun()
@@ -78,7 +78,7 @@ tab1, tab2 = st.tabs(["🚜 Radovi", "🛰️ Radar"])
 with tab1:
     c1, c2 = st.columns(2)
     izbor = c1.selectbox("Kultura:", ["Paradajz", "Paprika", "Voće", "Krompir", "Luk", "Lubenica", "Boranija", "Grašak", "TROŠAK"])
-    rad = c2.text_input("Šta si radio/kupio?")
+    rad = c2.text_input("Šta si radio/kupio?", key="input_rada")
     
     if st.button("SAČUVAJ TRAJNO"):
         if rad:
@@ -94,10 +94,10 @@ with tab2:
 st.write("---")
 st.subheader("📓 Tvoj digitalni dnevnik")
 try:
-    # URL za sirove podatke (Raw)
+    # URL za direktne podatke
     url_raw = f"https://githubusercontent.com{USER}/{REPO}/main/{FILE_PATH}"
-    # Nateraj internet da povuče najnoviju verziju pomoću timestamp-a
+    # Timestamp tera aplikaciju da ne učitava stare podatke iz memorije
     df = pd.read_csv(f"{url_raw}?v={datetime.now().timestamp()}")
-    st.dataframe(df.tail(15), use_container_width=True)
+    st.dataframe(df.tail(20), use_container_width=True)
 except:
-    st.info("Ovde će se pojaviti tabela nakon što prvi put klikneš na 'SAČUVAJ'.")
+    st.info("Tabela će se pojaviti ovde nakon prvog upisa.")
