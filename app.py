@@ -183,8 +183,9 @@ def add_reminder(text, days):
 
 st.title("🌾 AgroAsistent V2.2")
 
-tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
-    "🌱 Voćnjak",
+tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
+    "🍎 Voćnjak",
+    "🥦 Povrće",
     "🌦️ Vreme",
     "📸 AI Kamera",
     "⏳ Karenca",
@@ -210,6 +211,42 @@ with tab1:
     }
 
     st.info(plan[mesec])
+
+with tab2:
+
+    st.header("🥦 Povrtarstvo")
+
+    kultura = st.selectbox(
+        "Kultura",
+        ["Paradajz", "Paprika", "Krastavac", "Krompir", "Luk"]
+    )
+
+    mesec = st.selectbox(
+        "Mesec",
+        ["Maj", "Jun", "Jul", "Avgust"]
+    )
+
+    plan = {
+
+        "Paradajz": "Kalcijum + zaštita od plamenjače",
+        "Paprika": "Prihrana + trips kontrola",
+        "Krastavac": "Pepelnica preventiva",
+        "Krompir": "Zlatica + fungicid",
+        "Luk": "Bakarna zaštita"
+    }
+
+    st.info(plan.get(kultura, "Prati stanje biljke"))
+
+    rad = st.multiselect(
+        "Radovi",
+        ["Sadnja", "Zalivanje", "Prskanje", "Đubrenje"]
+    )
+
+    if st.button("Sačuvaj povrće rad"):
+
+        if rad:
+            save_github(kultura, ", ".join(rad))
+            st.success("Sačuvano")
 
 # =========================
 # VREME
