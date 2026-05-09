@@ -21,8 +21,12 @@ FILE_PATH = "dnevnik.csv"
 
 # --- FUNKCIJA ZA PISANJE NA GITHUB ---
 def snimi_na_github(kultura, radnja):
-    # ISPRAVAN API URL (mora biti ://github.com...)
-    url = f"https://://github.com{USER}/{REPO}/contents/{FILE_PATH}"
+    # 1. ISPRAVAN URL (bez duplih kosa crta i sa 'api.' poddomenom)
+    USER = "4trustja-design"
+    REPO = "requirements.txt"
+    FILE_PATH = "dnevnik.csv"
+    
+    url = f"https://github.com{USER}/{REPO}/contents/{FILE_PATH}"
     
     headers = {
         "Authorization": f"token {TOKEN}",
@@ -30,31 +34,28 @@ def snimi_na_github(kultura, radnja):
     }
 
     try:
-        # 1. Uzimamo trenutni fajl da dobijemo SHA i stari sadržaj
+        # Prvo proveravamo da li fajl postoji da uzmemo SHA
         res = requests.get(url, headers=headers, timeout=10)
         sha = None
         stari_sadrzaj = ""
         
         if res.status_code == 200:
-            sha = res.json().get('sha')
-            stari_sadrzaj = base64.b64decode(res.json()['content']).decode('utf-8')
+            podaci = res.json()
+            sha = podaci.get('sha')
+            stari_sadrzaj = base64.b64decode(podaci['content']).decode('utf-8')
         
-        # 2. Priprema novog reda
+        # Priprema novog reda
         vreme = datetime.now().strftime('%d.%m.%Y %H:%M')
-        cist_opis = radnja.replace(",", " ")
-        novi_red = f"{vreme},{kultura},{cist_opis}\n"
+        novi_red = f"{vreme},{kultura},{radnja.replace(',', ' ')}\n"
         
-        if not stari_sadrzaj or stari_sadrzaj.strip() == "":
+        if not stari_sadrzaj:
             finalni_sadrzaj = "Datum,Kultura,Rad\n" + novi_red
         else:
-            # Osiguravamo da novi red počne u novoj liniji
-            if not stari_sadrzaj.endswith('\n'):
-                stari_sadrzaj += '\n'
-            finalni_sadrzaj = stari_sadrzaj + novi_red
+            finalni_sadrzaj = stari_sadrzaj + ('' if stari_sadrzaj.endswith('\n') else '\n') + novi_red
             
-        # 3. Kodiranje i slanje (PUT metoda)
+        # Slanje na GitHub
         payload = {
-            "message": f"Zapis: {kultura}",
+            "message": f"Unos: {kultura}",
             "content": base64.b64encode(finalni_sadrzaj.encode('utf-8')).decode('utf-8'),
             "sha": sha
         }
@@ -62,14 +63,14 @@ def snimi_na_github(kultura, radnja):
         r = requests.put(url, headers=headers, json=payload, timeout=10)
         
         if r.status_code in [200, 201]:
-            st.success("✅ Uspešno sačuvano na GitHub!")
-            st.balloons()
-            st.rerun() 
+            st.success("✅ Podaci su uspešno sačuvani!")
+            st.rerun()
         else:
-            st.error(f"Greška servera ({r.status_code}): {r.text}")
+            st.error(f"Greška {r.status_code}: {r.text}")
             
     except Exception as e:
-        st.error(f"Problem u komunikaciji sa GitHub-om: {e}")
+        st.error(f"Kritična greška u URL-u: {e}")
+
 
 # --- GLAVNI INTERFEJS ---
 st.title("🌾 AgroAsistent: Digitalni Dnevnik i Radar")
