@@ -3,7 +3,7 @@ import requests
 import pandas as pd
 from datetime import datetime
 
-st.set_page_config(page_title="AgroAsistent V3.4.1", layout="wide")
+st.set_page_config(page_title="AgroAsistent V3.4.2", layout="wide")
 
 # =========================
 # WEATHER KEY
@@ -17,6 +17,7 @@ if "log" not in st.session_state:
     st.session_state.log = []
 
 def log_action(kultura, preparat):
+
     st.session_state.log.append({
         "datum": datetime.now().strftime("%d.%m.%Y %H:%M"),
         "kultura": kultura,
@@ -55,7 +56,7 @@ def alarms(w):
         out.append(("KRITIČNO", "Kiša → ne prskati"))
 
     if w["hum"] > 85:
-        out.append(("RIZIK", "Visoka vlaga → gljivice"))
+        out.append(("RIZIK", "Visoka vlaga"))
 
     if w["wind"] > 15:
         out.append(("KRITIČNO", "Jak vetar"))
@@ -79,7 +80,7 @@ def split(a):
     return hitno, rizik, info
 
 # =========================
-# VOĆNJAK
+# PLANOVI
 # =========================
 
 vocnjak = {
@@ -96,10 +97,6 @@ vocnjak = {
     "Novembar": "Bakar",
     "Decembar": "Mirovanje"
 }
-
-# =========================
-# POVRĆE
-# =========================
 
 povrce = {
     "Januar": "Planiranje",
@@ -124,7 +121,7 @@ preparati = {
 }
 
 # =========================
-# AI PREPORUKA DANA (NOVO)
+# AI PREPORUKA DANA
 # =========================
 def ai_preporuka_dana(kultura, mesec, w):
 
@@ -133,7 +130,7 @@ def ai_preporuka_dana(kultura, mesec, w):
     if w:
 
         if w["rain"]:
-            saveti.append("🌧️ Kiša → izbegni zaštitu danas")
+            saveti.append("🌧️ Kiša → ne raditi zaštitu")
 
         if w["hum"] > 85:
             saveti.append("🌫️ Visoka vlaga → rizik gljivica")
@@ -147,16 +144,16 @@ def ai_preporuka_dana(kultura, mesec, w):
     if mesec in ["Maj", "Jun"]:
 
         if kultura in ["Paradajz", "Paprika"]:
-            saveti.append("🧪 Prioritet: Kalcijum tretman za kvalitet ploda")
+            saveti.append("🧪 Kalcijum tretman je prioritet")
 
     if mesec in ["Jul", "Avgust"]:
-        saveti.append("🔥 Stres period → koristi biostimulatore")
+        saveti.append("🔥 Stres period → biostimulatori")
 
     if kultura == "Krastavac":
-        saveti.append("🥒 Prati pepelnicu i reaguj preventivno")
+        saveti.append("🥒 Prati pepelnicu")
 
     if kultura == "Paradajz":
-        saveti.append("🍅 Prati plamenjaču u vlažnim uslovima")
+        saveti.append("🍅 Prati plamenjaču")
 
     return saveti
 
@@ -164,7 +161,7 @@ def ai_preporuka_dana(kultura, mesec, w):
 # UI
 # =========================
 
-st.title("🌾 AgroAsistent V3.4.1")
+st.title("🌾 AgroAsistent V3.4.2")
 
 tab1, tab2, tab3, tab4, tab5 = st.tabs([
     "🚨 Danas",
@@ -192,13 +189,11 @@ with tab1:
         list(vocnjak.keys())
     )
 
-    # 🔥 AI PREPORUKA DANA
     st.subheader("🤖 AI preporuka dana")
 
     for s in ai_preporuka_dana(kultura, mesec, w):
         st.info(s)
 
-    # ALARMI
     a = alarms(w)
     h, r, i = split(a)
 
@@ -235,11 +230,22 @@ with tab3:
 
     st.info(povrce[mesec])
 
-    st.subheader("🧪 Preparati")
+    st.subheader("🧪 Preparati (čekiraj šta si uradio)")
 
     for p in preparati[kultura]:
 
-        st.write("• " + p)
+        col1, col2 = st.columns([0.1, 0.9])
+
+        with col1:
+
+            if st.checkbox("", key=f"{kultura}_{mesec}_{p}"):
+
+                log_action(kultura, p)
+                st.success("Zabeleženo u dnevnik")
+
+        with col2:
+
+            st.write("• " + p)
 
 # =========================
 # TAB 4
@@ -266,5 +272,6 @@ with tab5:
 
     if not st.session_state.log:
         st.info("Nema unosa")
+
     else:
         st.dataframe(pd.DataFrame(st.session_state.log))
