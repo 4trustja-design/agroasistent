@@ -26,13 +26,13 @@ def snimi_na_github(kultura, radnja):
     REPO = "requirements.txt"
     FILE_PATH = "dnevnik.csv"
     
-    url = f"https://github.com"
+    url = f"https://api.github.com/repos/{USER}/{REPO}/contents/{FILE_PATH}"
 
     
     headers = {
-        "Authorization": f"token {TOKEN}",
-        "Accept": "application/vnd.github.v3+json"
-    }
+    "Authorization": f"token {TOKEN}",
+    "Accept": "application/vnd.github+json"
+}
 
     try:
         # Prvo proveravamo da li fajl postoji da uzmemo SHA
