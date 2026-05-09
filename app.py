@@ -22,7 +22,7 @@ FILE_PATH = "dnevnik.csv"
 # --- FUNKCIJA ZA PISANJE NA GITHUB (PUT METODA) ---
 def snimi_na_github(kultura, radnja):
     # TAČAN URL ZA API (ovako mora da izgleda da bi radilo pisanje)
-    url = f"https://github.com{USER}/{REPO}/contents/dnevnik.csv"
+    url = f"https://github.com / {USER}/{REPO}/contents/dnevnik.csv"
     
     headers = {
         "Authorization": f"token {TOKEN}",
