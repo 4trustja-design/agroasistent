@@ -24,7 +24,7 @@ try:
     OPENWEATHER_API_KEY = st.secrets["OPENWEATHER_API_KEY"].strip()
 
     USER = "4trustja-design"
-    REPO = "NAZIV_TVOG_REPOZITORIJUMA"
+    REPO = "agroasistent"
 
 except Exception:
     st.error("⚠️ Popuni Streamlit Secrets!")
