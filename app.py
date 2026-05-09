@@ -2,16 +2,16 @@ import streamlit as st
 import requests
 from datetime import datetime, timedelta
 
-st.set_page_config(page_title="AgroAsistent V3.2.2", layout="wide")
+st.set_page_config(page_title="AgroAsistent V3.3", layout="wide")
 
 # =========================
-# SECRETS (OBAVEZNO)
+# SECRETS
 # =========================
 
 WEATHER_KEY = st.secrets["OPENWEATHER_API_KEY"]
 
 # =========================
-# WEATHER SAFE
+# WEATHER
 # =========================
 
 def weather():
@@ -40,31 +40,51 @@ def alarms(kultura, w):
     out = []
 
     if not w:
-        return [("⚠️ INFO", "Nema vremenskih podataka")]
+        return [("INFO", "Nema podataka o vremenu")]
 
     if w["rain"]:
-        out.append(("KRITIČNO", "Kiša → bez prskanja"))
+        out.append(("KRITIČNO", "Kiša → ne prskati"))
 
     if w["hum"] > 85:
         out.append(("RIZIK", "Visoka vlaga → gljivice"))
 
     if w["wind"] > 15:
-        out.append(("KRITIČNO", "Jak vetar"))
+        out.append(("KRITIČNO", "Jak vetar → zabrana prskanja"))
 
     if kultura == "Paradajz" and w["hum"] > 80:
-        out.append(("RIZIK", "Plamenjača"))
+        out.append(("RIZIK", "Plamenjača rizik"))
 
     if kultura == "Krastavac" and w["hum"] > 80:
-        out.append(("RIZIK", "Pepelnica"))
+        out.append(("RIZIK", "Pepelnica rizik"))
+
+    if kultura == "Paprika" and w["temp"] > 32:
+        out.append(("RIZIK", "Toplotni stres"))
 
     return out
 
+
+def split(a):
+
+    hitno, rizik, info = [], [], []
+
+    for t, m in a:
+
+        if t == "KRITIČNO":
+            hitno.append(m)
+        elif t == "RIZIK":
+            rizik.append(m)
+        else:
+            info.append(m)
+
+    return hitno, rizik, info
+
 # =========================
-# KARENCA (SIMPLE)
+# KARENCA
 # =========================
 
 if "spray" not in st.session_state:
     st.session_state.spray = []
+
 
 def add_spray(name, days):
     st.session_state.spray.append({
@@ -72,13 +92,16 @@ def add_spray(name, days):
         "end": datetime.now() + timedelta(days=days)
     })
 
+
 def karenca():
 
     now = datetime.now()
     active = []
 
     for s in st.session_state.spray:
+
         diff = (s["end"] - now).days
+
         if diff > 0:
             active.append((s["name"], diff))
 
@@ -89,20 +112,20 @@ def karenca():
 # =========================
 
 vocnjak = {
-    "Mart": "Start vegetacije + zaštita (bakar + rezidba)",
-    "April": "Preventiva bolesti + prskanje",
+    "Mart": "Start vegetacije + bakar + rezidba",
+    "April": "Preventiva bolesti",
     "Maj": "Cvetanje + kalcijum",
-    "Jun": "Rast ploda + zaštita",
-    "Jul": "Stres + zalivanje",
+    "Jun": "Rast ploda",
+    "Jul": "Zalivanje + stres",
     "Avgust": "Berba"
 }
 
 povrce = {
     "Mart": "Setva",
     "April": "Rasađivanje",
-    "Maj": "Rast biljke",
-    "Jun": "Zaštita (plamenjača / pepelnica)",
-    "Jul": "Intenzivno zalivanje",
+    "Maj": "Rast",
+    "Jun": "Zaštita",
+    "Jul": "Zalivanje",
     "Avgust": "Berba"
 }
 
@@ -110,13 +133,14 @@ povrce = {
 # UI
 # =========================
 
-st.title("🌾 AgroAsistent V3.2.2 (Stable)")
+st.title("🌾 AgroAsistent V3.3 — Stabilna verzija")
 
-tab1, tab2, tab3, tab4 = st.tabs([
+tab1, tab2, tab3, tab4, tab5 = st.tabs([
     "🚨 Danas",
     "🍎 Voćnjak",
     "🥦 Povrće",
-    "📊 Karenca"
+    "🌤️ Vreme",
+    "⏳ Karenca"
 ])
 
 # =========================
@@ -125,7 +149,7 @@ tab1, tab2, tab3, tab4 = st.tabs([
 
 with tab1:
 
-    st.header("🚨 Pametni alarmi")
+    st.header("🚨 Pametni alarmi + stanje")
 
     w = weather()
 
@@ -136,19 +160,19 @@ with tab1:
 
     a = alarms(kultura, w)
 
-    if not a:
-        st.success("Sve OK")
+    hitno, rizik, info = split(a)
 
-    for t, m in a:
+    st.subheader("🔥 HITNO")
+    for x in hitno:
+        st.error(x)
 
-        if t == "KRITIČNO":
-            st.error(m)
-        else:
-            st.warning(m)
+    st.subheader("⚠️ RIZIK")
+    for x in rizik:
+        st.warning(x)
 
-    st.subheader("⏳ Karenca")
-    for n, d in karenca():
-        st.info(f"{n} → {d} dana")
+    st.subheader("ℹ️ INFO")
+    for x in info:
+        st.info(x)
 
 # =========================
 # TAB 2 — VOĆNJAK
@@ -167,47 +191,55 @@ with tab2:
 
 with tab3:
 
-    st.header("🥦 Povrće")
-
-    # KULTURA
     kultura = st.selectbox(
         "Kultura",
         ["Paradajz", "Paprika", "Krastavac"]
     )
 
-    # MESEC
     mesec = st.selectbox(
         "Mesec",
-        ["Mart", "April", "Maj", "Jun", "Jul", "Avgust"]
+        list(povrce.keys())
     )
 
-    plan_kulture = {
-        "Paradajz": "🍅 Plamenjača → preventivno bakar + kalcijum",
-        "Paprika": "🌶️ Trips + stres → biostimulator",
-        "Krastavac": "🥒 Pepelnica → sumpor"
+    plan_k = {
+        "Paradajz": "Plamenjača + kalcijum",
+        "Paprika": "Stres + trips",
+        "Krastavac": "Pepelnica"
     }
 
-    plan_mesec = {
-        "Mart": "Setva / rasad",
-        "April": "Rasađivanje",
-        "Maj": "Rast biljke",
-        "Jun": "Zaštita i razvoj",
-        "Jul": "Intenzivno zalivanje",
-        "Avgust": "Berba"
-    }
+    st.subheader("📌 Kultura")
+    st.info(plan_k[kultura])
 
-    st.subheader("📌 Kultura plan")
-    st.info(plan_kulture[kultura])
+    st.subheader("📅 Sezona")
+    st.write(povrce[mesec])
 
-    st.subheader("📅 Sezonski plan")
-    st.write(plan_mesec[mesec])
 # =========================
-# TAB 4 — KARENCA
+# TAB 4 — VREME
 # =========================
 
 with tab4:
 
-    st.header("⏳ Karenca (aktivna)")
+    st.header("🌤️ Vreme")
+
+    w = weather()
+
+    if not w:
+        st.error("Nema podataka")
+    else:
+        st.metric("Temperatura", f"{w['temp']} °C")
+        st.metric("Vlažnost", f"{w['hum']} %")
+        st.metric("Vetар", f"{w['wind']} km/h")
+
+        if w["rain"]:
+            st.warning("Kiša u toku / najavljena")
+
+# =========================
+# TAB 5 — KARENCA
+# =========================
+
+with tab5:
+
+    st.header("⏳ Karenca")
 
     data = karenca()
 
