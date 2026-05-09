@@ -98,7 +98,7 @@ st.subheader("📓 Tvoj digitalni dnevnik (Uživo)")
 
 try:
     # Tvoj ispravljen URL za RAW podatke
-    url_raw = f"https://githubusercontent.com{USER}/{REPO}/main/{FILE_PATH}"
+    url_raw = f"https://githubusercontent.com/{USER}/{REPO}/main/{FILE_PATH}"
     
     # Učitavanje sa 'cache busting' parametrom da se uvek vidi najnoviji red
     df = pd.read_csv(f"{url_raw}?v={datetime.now().timestamp()}")
