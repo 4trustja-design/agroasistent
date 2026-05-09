@@ -273,8 +273,9 @@ with tab3:
                     st.success("Zabeleženo")
 
                     # 🤖 AI DODATAK
-                    if naziv in ["Biostimulator", "Sistemična zaštita", "Kalcijum"]:
+                    kljucne_reci_ai = ["biostimulator", "kalcijum", "bor", "sistemična", "fungicid"]
 
+                       if any(k in naziv.lower() for k in kljucne_reci_ai):
                         st.subheader("🤖 AI preporuka")
 
                         for p in ai_pretraga_preparata(naziv):
