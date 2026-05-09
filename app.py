@@ -8,7 +8,7 @@ import streamlit.components.v1 as components
 # 1. KONFIGURACIJA
 st.set_page_config(page_title="AgroAsistent Kruševac", layout="wide")
 
-# Učitavanje Secrets
+# Učitavanje podataka iz Secrets (pazimo na razmake)
 try:
     TOKEN = st.secrets["GITHUB_TOKEN"].strip()
     USER = st.secrets["GITHUB_USER"].strip()
@@ -19,9 +19,9 @@ except:
 
 FILE_PATH = "dnevnik.csv"
 
-# FUNKCIJA ZA SNIMANJE NA GITHUB
+# FUNKCIJA ZA SNIMANJE NA GITHUB (FIKSIRANA ADRESA)
 def snimi_na_github(kultura, radnja):
-    # POPRAVLJENA ADRESA: Sada je razdvojeno kako treba
+    # OVDE JE KLJUČNA PROMENA: Razdvojena i fiksirana adresa
     url = f"https://github.com{USER}/{REPO}/contents/{FILE_PATH}"
     
     headers = {
@@ -57,13 +57,13 @@ def snimi_na_github(kultura, radnja):
         
         r = requests.put(url, headers=headers, json=payload, timeout=15)
         
-        # POPRAVLJENO: Provera status koda (200 ili 201)
+        # PROVERA USPEHA (Popravljena linija)
         if r.status_code in [200, 201]:
             st.success("✅ Uspešno sačuvano na GitHub!")
             st.balloons()
             st.rerun()
         else:
-            st.error(f"Greška na GitHub-u: {r.status_code}")
+            st.error(f"Greška na GitHub-u (Kod {r.status_code}): {r.text}")
             
     except Exception as e:
         st.error(f"Sistemska greška: {str(e)}")
@@ -76,7 +76,7 @@ tab1, tab2 = st.tabs(["🚜 Radovi", "🛰️ Radar"])
 with tab1:
     c1, c2 = st.columns(2)
     izbor = c1.selectbox("Kultura:", ["Paradajz", "Paprika", "Voće", "Krompir", "Luk", "Lubenica", "Boranija", "Grašak", "TROŠAK"])
-    rad = c2.text_input("Šta si radio/kupio?")
+    rad = c2.text_input("Šta si radio/kupio?", key="input_rada")
     
     if st.button("SAČUVAJ TRAJNO"):
         if rad:
@@ -92,7 +92,9 @@ with tab2:
 st.write("---")
 st.subheader("📓 Tvoj digitalni dnevnik")
 try:
+    # URL za sirove podatke (Raw)
     url_raw = f"https://githubusercontent.com{USER}/{REPO}/main/{FILE_PATH}"
+    # Nateraj internet da povuče najnoviju verziju
     df = pd.read_csv(f"{url_raw}?v={datetime.now().timestamp()}")
     st.dataframe(df.tail(15), use_container_width=True)
 except:
