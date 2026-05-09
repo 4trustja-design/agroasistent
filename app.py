@@ -196,20 +196,35 @@ vocnjak = {
     "Decembar": "Mirovanje"
 }
 
-povrce = {
-    "Januar": "Plan plastenika",
-    "Februar": "Rasad",
-    "Mart": "Setva",
-    "April": "Presađivanje",
-    "Maj": "Rast",
-    "Jun": "Zaštita",
-    "Jul": "Zalivanje",
-    "Avgust": "Berba",
-    "Septembar": "Nova setva",
-    "Oktobar": "Jesenske kulture",
-    "Novembar": "Zatvaranje",
-    "Decembar": "Plan"
-}
+with tab3:
+
+    st.header("🥦 Povrće — pametni plan")
+
+    kultura = st.selectbox(
+        "Izaberi kulturu",
+        ["Paradajz", "Paprika", "Krastavac", "Krompir", "Luk"]
+    )
+
+    mesec = st.selectbox(
+        "Mesec",
+        list(povrce.keys()),
+        key="povrce_mesec"
+    )
+
+    plan_kulture = {
+
+        "Paradajz": "🍅 Plamenjača rizik → zaštita + kalcijum",
+        "Paprika": "🌶️ Stres → biostimulator + voda",
+        "Krastavac": "🥒 Pepelnica → sumpor",
+        "Krompir": "🥔 Zlatica → insekticid",
+        "Luk": "🧅 Bakarna zaštita + gljivice"
+    }
+
+    st.subheader("📌 Kultura plan")
+    st.info(plan_kulture[kultura])
+
+    st.subheader("📅 Sezonski okvir")
+    st.write(povrce[mesec])
 
 
 # =========================
