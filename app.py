@@ -167,13 +167,40 @@ with tab2:
 
 with tab3:
 
-    kultura = st.selectbox("Kultura", list(povrce.keys()), key="p1")
+    st.header("🥦 Povrće")
 
-    mesec = st.selectbox("Mesec", list(povrce.keys()), key="p2")
+    # KULTURA
+    kultura = st.selectbox(
+        "Kultura",
+        ["Paradajz", "Paprika", "Krastavac"]
+    )
 
-    st.subheader("🥦 Povrće")
-    st.info(povrce[mesec])
+    # MESEC
+    mesec = st.selectbox(
+        "Mesec",
+        ["Mart", "April", "Maj", "Jun", "Jul", "Avgust"]
+    )
 
+    plan_kulture = {
+        "Paradajz": "🍅 Plamenjača → preventivno bakar + kalcijum",
+        "Paprika": "🌶️ Trips + stres → biostimulator",
+        "Krastavac": "🥒 Pepelnica → sumpor"
+    }
+
+    plan_mesec = {
+        "Mart": "Setva / rasad",
+        "April": "Rasađivanje",
+        "Maj": "Rast biljke",
+        "Jun": "Zaštita i razvoj",
+        "Jul": "Intenzivno zalivanje",
+        "Avgust": "Berba"
+    }
+
+    st.subheader("📌 Kultura plan")
+    st.info(plan_kulture[kultura])
+
+    st.subheader("📅 Sezonski plan")
+    st.write(plan_mesec[mesec])
 # =========================
 # TAB 4 — KARENCA
 # =========================
