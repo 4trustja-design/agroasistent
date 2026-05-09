@@ -11,8 +11,8 @@ st.set_page_config(page_title="AgroAsistent Kruševac", layout="wide", page_icon
 # Učitavanje poverljivih podataka
 try:
     TOKEN = st.secrets["GITHUB_TOKEN"].strip()
-    USER = st.secrets["GITHUB_USER"].strip()
-    REPO = st.secrets["REPO_NAME"].strip()
+    USER = "4trustja-design"
+    REPO = "requirements.txt"
 except Exception as e:
     st.error("⚠️ Greška: Niste ispravno popunili Secrets u Streamlit podešavanjima!")
     st.stop()
