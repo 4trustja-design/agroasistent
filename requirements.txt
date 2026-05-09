@@ -4,3 +4,4 @@ st-gsheets-connection
 gspread
 xlsxwriter
 pillow
+beautifulsoup4
