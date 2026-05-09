@@ -140,8 +140,16 @@ with tab4:
 st.write("---")
 st.subheader("📓 Tvoj digitalni dnevnik (Uživo)")
 try:
-    url_raw = f"https://githubusercontent.com{USER}/{REPO}/main/{FILE_PATH}"
+    url_raw = f"https://raw.githubusercontent.com/{USER}/{REPO}/main/{FILE_PATH}"
     df = pd.read_csv(f"{url_raw}?v={datetime.now().timestamp()}")
     st.dataframe(df.tail(20), use_container_width=True)
+
+    csv = df.to_csv(index=False).encode("utf-8")
+    st.download_button(
+        label="Preuzmi tabelu kao CSV",
+        data=csv,
+        file_name="dnevnik.csv",
+        mime="text/csv",
+    )
 except:
     st.info("Tabela će se pojaviti ovde nakon prvog uspešnog upisa.")
