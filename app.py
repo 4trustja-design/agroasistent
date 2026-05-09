@@ -26,7 +26,8 @@ def snimi_na_github(kultura, radnja):
     REPO = "requirements.txt"
     FILE_PATH = "dnevnik.csv"
     
-    url = f"https://github.com{USER}/{REPO}/contents/{FILE_PATH}"
+    url = f"https://github.com"
+
     
     headers = {
         "Authorization": f"token {TOKEN}",
