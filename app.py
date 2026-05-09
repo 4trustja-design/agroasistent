@@ -12,11 +12,10 @@ conn = st.connection("gsheets", type=GSheetsConnection)
 
 def zapisi_u_bazu(kultura, radnja):
     try:
-        # Čitamo list "Dnevnik" koristeći link iz Secrets
+        # Čitamo BEZ worksheet imena jer GID u linku već sve govori
         df = conn.read(ttl=0)
         df = df.dropna(how='all')
         
-        # Novi red podataka
         novi_red = pd.DataFrame([{
             "Vremenska_oznaka": datetime.now().strftime("%d.%m.%Y %H:%M"),
             "Korisnik": "Ja",
@@ -24,15 +23,22 @@ def zapisi_u_bazu(kultura, radnja):
             "Status": radnja
         }])
         
-        # Spajanje i slanje nazad na Google Drive
         finalni_df = pd.concat([df, novi_red], ignore_index=True)
+        
+        # Upisujemo direktno
         conn.update(data=finalni_df)
-        st.success(f"✅ Uspešno sačuvano u Google tabelu!")
+        st.success(f"✅ Uspešno sačuvano!")
         st.cache_data.clear()
     except Exception as e:
-        st.error(f"Greška: Proveri da li se list zove 'Dnevnik' i da li je link ispravan. Detalji: {e}")
+        st.error(f"Sistemska greška: {e}")
 
-st.title("🌾 AgroAsistent: Digitalni Dnevnik i Savetnik")
+# --- Na dnu koda gde je prikaz, promeni i taj red (oko reda 74) ---
+try:
+    prikaz_df = conn.read(ttl=0) # Obriši worksheet="Dnevnik"
+    st.dataframe(prikaz_df.dropna(how='all').tail(15), use_container_width=True)
+except:
+    pass
+
 
 tab1, tab2, tab3, tab4 = st.tabs(["🍎 Voćarstvo", "🥦 Povrtarstvo", "🛰️ Radar i Savet", "💰 Troškovnik"])
 
