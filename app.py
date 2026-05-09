@@ -2,9 +2,8 @@ import streamlit as st
 import requests
 import pandas as pd
 from datetime import datetime
-import urllib.parse
 
-st.set_page_config(page_title="AgroAsistent V3.5", layout="wide")
+st.set_page_config(page_title="AgroAsistent V3.4.1", layout="wide")
 
 # =========================
 # WEATHER KEY
@@ -18,7 +17,6 @@ if "log" not in st.session_state:
     st.session_state.log = []
 
 def log_action(kultura, preparat):
-
     st.session_state.log.append({
         "datum": datetime.now().strftime("%d.%m.%Y %H:%M"),
         "kultura": kultura,
@@ -57,12 +55,13 @@ def alarms(w):
         out.append(("KRITIČNO", "Kiša → ne prskati"))
 
     if w["hum"] > 85:
-        out.append(("RIZIK", "Visoka vlaga"))
+        out.append(("RIZIK", "Visoka vlaga → gljivice"))
 
     if w["wind"] > 15:
         out.append(("KRITIČNO", "Jak vetar"))
 
     return out
+
 
 def split(a):
 
@@ -80,23 +79,27 @@ def split(a):
     return hitno, rizik, info
 
 # =========================
-# PLANOVI
+# VOĆNJAK
 # =========================
 
 vocnjak = {
     "Januar": "Mirovanje",
     "Februar": "Rezidba",
-    "Mart": "Start vegetacije",
-    "April": "Preventiva",
+    "Mart": "Start vegetacije + zaštita",
+    "April": "Preventiva bolesti",
     "Maj": "Cvetanje",
     "Jun": "Rast ploda",
-    "Jul": "Stres",
+    "Jul": "Zalivanje",
     "Avgust": "Berba",
     "Septembar": "Kasna berba",
     "Oktobar": "Jesenje đubrenje",
     "Novembar": "Bakar",
     "Decembar": "Mirovanje"
 }
+
+# =========================
+# POVRĆE
+# =========================
 
 povrce = {
     "Januar": "Planiranje",
@@ -110,7 +113,7 @@ povrce = {
 }
 
 # =========================
-# PREPARATI (BAZA)
+# PREPARATI
 # =========================
 
 preparati = {
@@ -121,49 +124,47 @@ preparati = {
 }
 
 # =========================
-# AI PREPORUKA (BEZ CHECKBOX)
+# AI PREPORUKA DANA (NOVO)
 # =========================
-def ai_preporuka(kultura, mesec, w):
+def ai_preporuka_dana(kultura, mesec, w):
 
-    preporuke = []
+    saveti = []
 
-    base = preparati.get(kultura, [])
-
-    # logika po vremenu
     if w:
 
-        if w["hum"] > 85:
-            preporuke.append("Preventivni fungicid zbog visoke vlage")
-
         if w["rain"]:
-            preporuke.append("Odloži prskanje (kiša)")
+            saveti.append("🌧️ Kiša → izbegni zaštitu danas")
 
-        if w["wind"] < 10:
-            preporuke.append("Moguća folijarna prihrana")
+        if w["hum"] > 85:
+            saveti.append("🌫️ Visoka vlaga → rizik gljivica")
 
-    # logika po fazi
+        if w["wind"] > 15:
+            saveti.append("💨 Jak vetar → ne prskati")
+
+        if w["wind"] < 10 and not w["rain"]:
+            saveti.append("🌿 Stabilni uslovi → pogodno za tretman")
+
     if mesec in ["Maj", "Jun"]:
 
         if kultura in ["Paradajz", "Paprika"]:
-            preporuke.append("Kalcijum tretman za kvalitet ploda")
+            saveti.append("🧪 Prioritet: Kalcijum tretman za kvalitet ploda")
 
     if mesec in ["Jul", "Avgust"]:
+        saveti.append("🔥 Stres period → koristi biostimulatore")
 
-        preporuke.append("Stres zaštita + biostimulator")
+    if kultura == "Krastavac":
+        saveti.append("🥒 Prati pepelnicu i reaguj preventivno")
 
-    # konkretni preparati
-    preporuke.append("Preporučeni preparati:")
+    if kultura == "Paradajz":
+        saveti.append("🍅 Prati plamenjaču u vlažnim uslovima")
 
-    for p in base:
-        preporuke.append(f"• {p}")
-
-    return preporuke
+    return saveti
 
 # =========================
 # UI
 # =========================
 
-st.title("🌾 AgroAsistent V3.5")
+st.title("🌾 AgroAsistent V3.4.1")
 
 tab1, tab2, tab3, tab4, tab5 = st.tabs([
     "🚨 Danas",
@@ -191,12 +192,27 @@ with tab1:
         list(vocnjak.keys())
     )
 
+    # 🔥 AI PREPORUKA DANA
     st.subheader("🤖 AI preporuka dana")
 
-    ai = ai_preporuka(kultura, mesec, w)
+    for s in ai_preporuka_dana(kultura, mesec, w):
+        st.info(s)
 
-    for a in ai:
-        st.write("• " + a)
+    # ALARMI
+    a = alarms(w)
+    h, r, i = split(a)
+
+    st.subheader("🔥 HITNO")
+    for x in h:
+        st.error(x)
+
+    st.subheader("⚠️ RIZIK")
+    for x in r:
+        st.warning(x)
+
+    st.subheader("ℹ️ INFO")
+    for x in i:
+        st.info(x)
 
 # =========================
 # TAB 2
@@ -219,7 +235,7 @@ with tab3:
 
     st.info(povrce[mesec])
 
-    st.subheader("🧪 Baza preparata")
+    st.subheader("🧪 Preparati")
 
     for p in preparati[kultura]:
 
@@ -250,6 +266,5 @@ with tab5:
 
     if not st.session_state.log:
         st.info("Nema unosa")
-
     else:
         st.dataframe(pd.DataFrame(st.session_state.log))
