@@ -4,7 +4,7 @@ import requests
 import base64
 from datetime import datetime, timedelta
 
-st.set_page_config(page_title="AgroAsistent V3.2", layout="wide")
+st.set_page_config(page_title="AgroAsistent V3.2.1", layout="wide")
 
 # =========================
 # SECRETS
@@ -29,7 +29,6 @@ if "prskanja" not in st.session_state:
 # =========================
 
 def weather():
-
     url = f"https://api.openweathermap.org/data/2.5/weather?q=Krusevac,RS&appid={WEATHER_KEY}&units=metric"
     r = requests.get(url)
 
@@ -45,9 +44,8 @@ def weather():
         "rain": "rain" in d
     }
 
-
 # =========================
-# PAMETNI ALARMI
+# ALARMI
 # =========================
 
 def pametni_alarmi(kultura, w):
@@ -55,24 +53,22 @@ def pametni_alarmi(kultura, w):
     alarmi = []
 
     if not w:
-        return [("⚠️ INFO", "Nema vremenskih podataka")]
+        return [("⚠️ INFO", "Nema podataka o vremenu")]
 
-    # GLOBALNO
     if w["rain"]:
-        alarmi.append(("🚫 KRITIČNO", "Kiša → zabrana prskanja"))
+        alarmi.append(("🚫 KRITIČNO", "Kiša → ne prskati"))
 
     if w["hum"] > 85:
-        alarmi.append(("⚠️ RIZIK", "Visoka vlaga → gljivične bolesti"))
+        alarmi.append(("⚠️ RIZIK", "Visoka vlaga → gljivice"))
 
     if w["wind"] > 15:
-        alarmi.append(("🚫 KRITIČNO", "Jak vetar → ne prskati"))
+        alarmi.append(("🚫 KRITIČNO", "Jak vetar → zabrana prskanja"))
 
-    # KULTURA
     if kultura == "Paradajz":
         if w["hum"] > 80:
             alarmi.append(("⚠️ RIZIK", "Plamenjača moguća"))
         if w["temp"] > 30:
-            alarmi.append(("ℹ️ INFO", "Kalcijum + zalivanje uveče"))
+            alarmi.append(("ℹ️ INFO", "Kalcijum + zalivanje"))
 
     if kultura == "Paprika":
         if w["temp"] > 32:
@@ -84,21 +80,16 @@ def pametni_alarmi(kultura, w):
 
     if kultura == "Voćnjak":
         if w["hum"] > 80:
-            alarmi.append(("⚠️ RIZIK", "Gljivične bolesti u voćnjaku"))
+            alarmi.append(("⚠️ RIZIK", "Gljivične bolesti"))
 
     return alarmi
 
 
-# =========================
-# TOP AKCIJE
-# =========================
-
-def top_akcije(alarmi):
+def split_alarmi(alarmi):
 
     hitno, rizik, info = [], [], []
 
     for tip, msg in alarmi:
-
         if "KRITIČNO" in tip:
             hitno.append(msg)
         elif "RIZIK" in tip:
@@ -108,35 +99,30 @@ def top_akcije(alarmi):
 
     return hitno, rizik, info
 
-
 # =========================
 # AI KAMERA
 # =========================
 
 def ai_camera(kultura, simptom, vlaga, temp):
 
-    score = 0
-
-    if vlaga > 85:
-        score += 2
-    if temp > 25:
-        score += 1
-
     bolesti = {
-
         "Paradajz": {
             "Žute fleke": ("Plamenjača", 0.90),
             "Bele tačke": ("Pepelnica", 0.75)
         },
-
         "Paprika": {
             "Sušenje lista": ("Bakterioza", 0.80)
         },
-
         "Krastavac": {
             "Žutilo lista": ("Virus / stres", 0.70)
         }
     }
+
+    score = 0
+    if vlaga > 85:
+        score += 2
+    if temp > 25:
+        score += 1
 
     if kultura in bolesti and simptom in bolesti[kultura]:
 
@@ -147,13 +133,11 @@ def ai_camera(kultura, simptom, vlaga, temp):
 
     return None, 0
 
-
 # =========================
-# KARANCA
+# KARENCA
 # =========================
 
 def add_prskanje(p, d):
-
     st.session_state.prskanja.append({
         "p": p,
         "date": datetime.now(),
@@ -176,13 +160,12 @@ def karenca():
 
     return active
 
-
 # =========================
-# VOĆNJAK + POVRĆE (12 MES)
+# PLANOVI
 # =========================
 
 vocnjak = {
-    "Januar": "Mirovanje i planiranje",
+    "Januar": "Mirovanje",
     "Februar": "Rezidba",
     "Mart": "Start vegetacije + zaštita",
     "April": "Preventiva",
@@ -191,84 +174,31 @@ vocnjak = {
     "Jul": "Stres + voda",
     "Avgust": "Berba",
     "Septembar": "Glavna berba",
-    "Oktobar": "Jesenje đubrenje",
-    "Novembar": "Bakarna zaštita",
+    "Oktobar": "Đubrenje",
+    "Novembar": "Bakar",
     "Decembar": "Mirovanje"
 }
 
-with tab3:
-
-    st.header("🥦 Povrće — pametni plan")
-
-    kultura = st.selectbox(
-        "Izaberi kulturu",
-        ["Paradajz", "Paprika", "Krastavac", "Krompir", "Luk"]
-    )
-
-    mesec = st.selectbox(
-        "Mesec",
-        list(povrce.keys()),
-        key="povrce_mesec"
-    )
-
-    plan_kulture = {
-
-        "Paradajz": "🍅 Plamenjača rizik → zaštita + kalcijum",
-        "Paprika": "🌶️ Stres → biostimulator + voda",
-        "Krastavac": "🥒 Pepelnica → sumpor",
-        "Krompir": "🥔 Zlatica → insekticid",
-        "Luk": "🧅 Bakarna zaštita + gljivice"
-    }
-
-    st.subheader("📌 Kultura plan")
-    st.info(plan_kulture[kultura])
-
-    st.subheader("📅 Sezonski okvir")
-    st.write(povrce[mesec])
-
-
-# =========================
-# GITHUB
-# =========================
-
-def save_github(kultura, rad):
-
-    url = f"https://api.github.com/repos/{GITHUB_USER}/{REPO}/contents/{FILE}"
-    headers = {"Authorization": f"token {GITHUB_TOKEN}"}
-
-    try:
-        r = requests.get(url, headers=headers)
-
-        sha = None
-        content = ""
-
-        if r.status_code == 200:
-            data = r.json()
-            sha = data["sha"]
-            content = base64.b64decode(data["content"]).decode()
-
-        line = f"{datetime.now()},{kultura},{rad}\n"
-        full = content + line
-
-        payload = {
-            "message": "update",
-            "content": base64.b64encode(full.encode()).decode()
-        }
-
-        if sha:
-            payload["sha"] = sha
-
-        requests.put(url, headers=headers, json=payload)
-
-    except:
-        pass
-
+povrce = {
+    "Januar": "Plan",
+    "Februar": "Rasad",
+    "Mart": "Setva",
+    "April": "Presađivanje",
+    "Maj": "Rast",
+    "Jun": "Zaštita",
+    "Jul": "Zalivanje",
+    "Avgust": "Berba",
+    "Septembar": "Setva",
+    "Oktobar": "Jesenje kulture",
+    "Novembar": "Zatvaranje",
+    "Decembar": "Plan"
+}
 
 # =========================
 # UI
 # =========================
 
-st.title("🌾 AgroAsistent V3.2 — Pametni Alarmi")
+st.title("🌾 AgroAsistent V3.2.1")
 
 tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
     "🚨 Danas",
@@ -280,7 +210,7 @@ tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
 ])
 
 # =========================
-# 🚨 PAMETNI ALARMI
+# DANAS
 # =========================
 
 with tab1:
@@ -291,31 +221,27 @@ with tab1:
 
     kultura = st.selectbox(
         "Kultura",
-        ["Voćnjak", "Paradajz", "Paprika", "Krastavac"],
-        key="alarm_kultura"
+        ["Voćnjak", "Paradajz", "Paprika", "Krastavac"]
     )
 
     alarmi = pametni_alarmi(kultura, w)
-    hitno, rizik, info = top_akcije(alarmi)
+    hitno, rizik, info = split_alarmi(alarmi)
 
     st.subheader("🔥 HITNO")
-
-    if hitno:
-        for h in hitno:
-            st.error(h)
-    else:
-        st.success("Nema hitnih akcija")
+    for h in hitno:
+        st.error(h)
 
     st.subheader("⚠️ RIZIK")
-
     for r in rizik:
         st.warning(r)
 
     st.subheader("ℹ️ INFO")
-
     for i in info:
         st.info(i)
 
+    st.subheader("⏳ Karenca")
+    for p, d in karenca():
+        st.warning(f"{p} → {d} dana")
 
 # =========================
 # VOĆNJAK
@@ -328,18 +254,24 @@ with tab2:
     st.subheader("🍎 Voćnjak")
     st.write(vocnjak[mesec])
 
-
 # =========================
 # POVRĆE
 # =========================
 
 with tab3:
 
+    kultura_p = st.selectbox("Kultura", ["Paradajz", "Paprika", "Krastavac"])
+
     mesec = st.selectbox("Mesec", list(povrce.keys()), key="p")
 
-    st.subheader("🥦 Povrće")
-    st.write(povrce[mesec])
+    plan = {
+        "Paradajz": "Plamenjača + kalcijum",
+        "Paprika": "Stres + trips",
+        "Krastavac": "Pepelnica"
+    }
 
+    st.info(plan[kultura_p])
+    st.write(povrce[mesec])
 
 # =========================
 # AI CAMERA
@@ -349,38 +281,20 @@ with tab4:
 
     st.header("📸 AI kamera")
 
-    st.camera_input("Slikaj biljku")
+    st.camera_input("Slikaj")
 
-    kultura_ai = st.selectbox("Kultura", ["Paradajz", "Paprika", "Krastavac"], key="ai")
-    simptom = st.selectbox("Simptom", ["Žute fleke", "Bele tačke", "Sušenje lista", "Žutilo lista"], key="ai2")
+    k = st.selectbox("Kultura", ["Paradajz", "Paprika", "Krastavac"])
+    s = st.selectbox("Simptom", ["Žute fleke", "Bele tačke", "Sušenje lista", "Žutilo lista"])
 
     if st.button("Analiza"):
 
         w = weather()
 
-        b, conf = ai_camera(
-            kultura_ai,
-            simptom,
-            w["hum"] if w else 70,
-            w["temp"] if w else 20
-        )
+        b, c = ai_camera(k, s, w["hum"] if w else 70, w["temp"] if w else 20)
 
         if b:
             st.error(b)
-            st.info(f"Pouzdanost: {conf*100}%")
-
-
-# =========================
-# KARENCA
-# =========================
-
-with tab5:
-
-    st.header("⏳ Karenca")
-
-    for p, d in karenca():
-        st.warning(f"{p} → {d} dana")
-
+            st.info(f"{c*100}%")
 
 # =========================
 # ANALIZA
@@ -390,12 +304,4 @@ with tab6:
 
     st.header("📊 Analiza")
 
-    try:
-
-        url = f"https://raw.githubusercontent.com/{GITHUB_USER}/{REPO}/main/{FILE}"
-        df = pd.read_csv(url)
-
-        st.bar_chart(df["Kultura"].value_counts())
-
-    except:
-        st.info("Nema podataka")
+    st.info("Dodaj kasnije podatke iz GitHub-a")
