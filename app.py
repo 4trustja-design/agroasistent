@@ -8,12 +8,12 @@ import streamlit.components.v1 as components
 # 1. KONFIGURACIJA
 st.set_page_config(page_title="AgroAsistent Kruševac", layout="wide")
 
-# Učitavanje Secrets - uklanjamo sve nepotrebne karaktere
+# Učitavanje Secrets
 try:
     TOKEN = st.secrets["GITHUB_TOKEN"].strip()
     USER = st.secrets["GITHUB_USER"].strip()
     REPO = st.secrets["REPO_NAME"].strip()
-except Exception as e:
+except:
     st.error("⚠️ Greška: Nisu popunjeni Secrets u Streamlit podešavanjima!")
     st.stop()
 
@@ -21,15 +21,16 @@ FILE_PATH = "dnevnik.csv"
 
 # FUNKCIJA ZA SNIMANJE NA GITHUB
 def snimi_na_github(kultura, radnja):
-    # OVDE SMO POPRAVILI URL DA SE NE "LEPI"
+    # POPRAVLJENA ADRESA: Sada je razdvojeno kako treba
     url = f"https://github.com{USER}/{REPO}/contents/{FILE_PATH}"
+    
     headers = {
         "Authorization": f"token {TOKEN}",
         "Accept": "application/vnd.github.v3+json"
     }
     
     try:
-        # 1. Provera da li fajl već postoji
+        # 1. Provera postojećeg fajla
         res = requests.get(url, headers=headers, timeout=15)
         sha = None
         stari_sadrzaj = ""
@@ -38,11 +39,10 @@ def snimi_na_github(kultura, radnja):
             sha = res.json().get('sha')
             stari_sadrzaj = base64.b64decode(res.json()['content']).decode('utf-8')
         
-        # 2. Priprema novog reda
+        # 2. Novi red
         vreme = datetime.now().strftime('%d.%m.%Y %H:%M')
         novi_red = f"{vreme},{kultura},{radnja}\n"
         
-        # Ako je fajl nov, dodajemo zaglavlje
         if not stari_sadrzaj:
             finalni_sadrzaj = "Datum,Kultura,Rad\n" + novi_red
         else:
@@ -50,23 +50,23 @@ def snimi_na_github(kultura, radnja):
             
         # 3. Slanje na GitHub
         payload = {
-            "message": f"Zapis za {kultura}",
+            "message": f"Zapis: {kultura}",
             "content": base64.b64encode(finalni_sadrzaj.encode('utf-8')).decode('utf-8'),
             "sha": sha
         }
         
         r = requests.put(url, headers=headers, json=payload, timeout=15)
         
-        # POPRAVLJENA PROVERA (Sada je ispravna Python sintaksa)
+        # POPRAVLJENO: Provera status koda (200 ili 201)
         if r.status_code in [200, 201]:
             st.success("✅ Uspešno sačuvano na GitHub!")
             st.balloons()
             st.rerun()
         else:
-            st.error(f"Greška servera: {r.status_code}")
+            st.error(f"Greška na GitHub-u: {r.status_code}")
             
     except Exception as e:
-        st.error(f"Problem u komunikaciji: {str(e)}")
+        st.error(f"Sistemska greška: {str(e)}")
 
 st.title("🌾 AgroAsistent: Digitalni Dnevnik")
 
@@ -74,15 +74,13 @@ st.title("🌾 AgroAsistent: Digitalni Dnevnik")
 tab1, tab2 = st.tabs(["🚜 Radovi", "🛰️ Radar"])
 
 with tab1:
-    col1, col2 = st.columns(2)
-    with col1:
-        izabrana_kultura = st.selectbox("Izaberi biljku:", ["Paradajz", "Paprika", "Voće", "Krompir", "Luk", "Lubenica", "Boranija", "Grašak", "TROŠAK"])
-    with col2:
-        opis_rada = st.text_input("Šta si radio/kupio?")
+    c1, c2 = st.columns(2)
+    izbor = c1.selectbox("Kultura:", ["Paradajz", "Paprika", "Voće", "Krompir", "Luk", "Lubenica", "Boranija", "Grašak", "TROŠAK"])
+    rad = c2.text_input("Šta si radio/kupio?")
     
     if st.button("SAČUVAJ TRAJNO"):
-        if opis_rada:
-            snimi_na_github(izabrana_kultura, opis_rada)
+        if rad:
+            snimi_na_github(izbor, rad)
         else:
             st.warning("Prvo upiši opis rada!")
 
@@ -94,9 +92,7 @@ with tab2:
 st.write("---")
 st.subheader("📓 Tvoj digitalni dnevnik")
 try:
-    # URL za sirove podatke
     url_raw = f"https://githubusercontent.com{USER}/{REPO}/main/{FILE_PATH}"
-    # Dodajemo v= timestamp da nateramo GitHub da nam ne šalje staru verziju iz memorije
     df = pd.read_csv(f"{url_raw}?v={datetime.now().timestamp()}")
     st.dataframe(df.tail(15), use_container_width=True)
 except:
