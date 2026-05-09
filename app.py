@@ -19,10 +19,10 @@ except Exception as e:
 
 FILE_PATH = "dnevnik.csv"
 
-# --- FUNKCIJA ZA PISANJE NA GITHUB (PUT METODA) ---
+# --- FUNKCIJA ZA PISANJE NA GITHUB ---
 def snimi_na_github(kultura, radnja):
-    # TAČAN URL ZA API (ovako mora da izgleda da bi radilo pisanje)
-    url = "https://github.com"
+    # ISPRAVAN API URL (mora biti ://github.com...)
+    url = f"https://://github.com{USER}/{REPO}/contents/{FILE_PATH}"
     
     headers = {
         "Authorization": f"token {TOKEN}",
@@ -39,18 +39,20 @@ def snimi_na_github(kultura, radnja):
             sha = res.json().get('sha')
             stari_sadrzaj = base64.b64decode(res.json()['content']).decode('utf-8')
         
-        # 2. Priprema novog reda (Datum, Kultura, Rad)
+        # 2. Priprema novog reda
         vreme = datetime.now().strftime('%d.%m.%Y %H:%M')
-        # Čistimo zareze iz opisa da ne pokvarimo CSV tabelu
         cist_opis = radnja.replace(",", " ")
         novi_red = f"{vreme},{kultura},{cist_opis}\n"
         
-        if not stari_sadrzaj:
+        if not stari_sadrzaj or stari_sadrzaj.strip() == "":
             finalni_sadrzaj = "Datum,Kultura,Rad\n" + novi_red
         else:
+            # Osiguravamo da novi red počne u novoj liniji
+            if not stari_sadrzaj.endswith('\n'):
+                stari_sadrzaj += '\n'
             finalni_sadrzaj = stari_sadrzaj + novi_red
             
-        # 3. Kodiranje u Base64 i slanje
+        # 3. Kodiranje i slanje (PUT metoda)
         payload = {
             "message": f"Zapis: {kultura}",
             "content": base64.b64encode(finalni_sadrzaj.encode('utf-8')).decode('utf-8'),
@@ -62,7 +64,7 @@ def snimi_na_github(kultura, radnja):
         if r.status_code in [200, 201]:
             st.success("✅ Uspešno sačuvano na GitHub!")
             st.balloons()
-            st.rerun() # Osvežava aplikaciju da se vidi novi red
+            st.rerun() 
         else:
             st.error(f"Greška servera ({r.status_code}): {r.text}")
             
@@ -90,20 +92,17 @@ with tab1:
 
 with tab2:
     st.subheader("Radar uživo (VremeRadar.rs)")
-    components.html('<iframe src="https://vremeradar.rs" width="100%" height="600" style="border:none;"></iframe>', height=620)
+    # Koristimo direktan link ka radarskoj mapi
+    components.html('<iframe src="https://vremeiradar.rs" width="100%" height="600" style="border:none;"></iframe>', height=620)
 
-# --- TVOJ POBOLJŠANI KOD ZA ČITANJE DNEVNIKA ---
+# --- ČITANJE DNEVNIKA ---
 st.write("---")
 st.subheader("📓 Tvoj digitalni dnevnik (Uživo)")
 
 try:
-    # Tvoj ispravljen URL za RAW podatke
-    url_raw = f"https://githubusercontent.com/{USER}/{REPO}/main/{FILE_PATH}"
-    
-    # Učitavanje sa 'cache busting' parametrom da se uvek vidi najnoviji red
+    # Ispravljen URL za sirove podatke (dodat / nakon domena)
+    url_raw = f"https://raw.githubusercontent.com/{USER}/{REPO}/main/{FILE_PATH}"
     df = pd.read_csv(f"{url_raw}?v={datetime.now().timestamp()}")
-    
-    # Prikaz poslednjih 20 redova (da imaš bolji pregled)
     st.dataframe(df.tail(20), use_container_width=True)
-except:
-    st.info("Ovde će se pojaviti tabela čim uradiš prvi uspešan upis.")
+except Exception as e:
+    st.info("Tabela će se pojaviti ovde čim unesete prvi podatak. (Ako je fajl prazan, ovo je normalno)")
