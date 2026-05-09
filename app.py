@@ -2,17 +2,25 @@ import streamlit as st
 import requests
 import pandas as pd
 from datetime import datetime
+import urllib.parse
+from bs4 import BeautifulSoup
 
-st.set_page_config(page_title="AgroAsistent V3.3.4", layout="wide")
+st.set_page_config(page_title="AgroAsistent V3.4", layout="wide")
 
+# =========================
+# WEATHER KEY
+# =========================
 WEATHER_KEY = st.secrets["OPENWEATHER_API_KEY"]
 
 # =========================
-# LOG
+# SESSION LOG
 # =========================
 if "log" not in st.session_state:
     st.session_state.log = []
 
+# =========================
+# LOG FUNKCIJA
+# =========================
 def log_action(kultura, preparat):
 
     st.session_state.log.append({
@@ -50,15 +58,16 @@ def alarms(kultura, w):
         return [("INFO", "Nema podataka")]
 
     if w["rain"]:
-        out.append(("KRITIČNO", "Kiša → bez prskanja"))
+        out.append(("KRITIČNO", "Kiša → ne prskati"))
 
     if w["hum"] > 85:
-        out.append(("RIZIK", "Visoka vlaga"))
+        out.append(("RIZIK", "Visoka vlaga → gljivice"))
 
     if w["wind"] > 15:
         out.append(("KRITIČNO", "Jak vetar"))
 
     return out
+
 
 def split(a):
 
@@ -76,7 +85,7 @@ def split(a):
     return hitno, rizik, info
 
 # =========================
-# VOĆNJAK (OSTAJE ISTO)
+# VOĆNJAK
 # =========================
 
 vocnjak = {
@@ -95,7 +104,7 @@ vocnjak = {
 }
 
 # =========================
-# POVRĆE PLAN
+# POVRĆE
 # =========================
 
 povrce = {
@@ -103,84 +112,92 @@ povrce = {
     "Februar": "Rasad",
     "Mart": "Setva",
     "April": "Rasađivanje",
-    "Maj": "Rast intenzivan",
+    "Maj": "Rast",
     "Jun": "Formiranje ploda",
-    "Jul": "Zaštita + stres",
+    "Jul": "Zaštita",
     "Avgust": "Berba"
 }
 
 # =========================
-# PREPARATI PO MESECU + KULTURI (FIX)
+# PREPARATI
 # =========================
 
 preparati = {
 
     "Paradajz": {
-
-        "Maj": [
-            ("Bakarni preparat", "Start zaštita od plamenjače.", "7 dana"),
-            ("Kalcijum", "Jača cvet i plod.", "0 dana")
-        ],
-
-        "Jun": [
-            ("Mankozeb", "Intenzivna zaštita lista.", "10 dana"),
-            ("Kalcijum", "Sprečava trulež vrha.", "0 dana")
-        ],
-
-        "Jul": [
-            ("Biostimulator", "Ublažava stres i sušu.", "0 dana"),
-            ("Sistemični fungicid", "Jača zaštita ploda.", "14 dana")
-        ],
-
-        "Avgust": [
-            ("Kratka karenca fungicid", "Finalna zaštita pred berbu.", "7 dana")
-        ]
+        "Maj": [("Bakarni preparat", "Start zaštita", "7 dana"),
+                ("Kalcijum", "Jača plod", "0 dana")],
+        "Jun": [("Mankozeb", "Zaštita lista", "10 dana"),
+                ("Kalcijum", "Protiv truleži", "0 dana")],
+        "Jul": [("Biostimulator", "Stres zaštita", "0 dana")],
+        "Avgust": [("Fungicid završni", "Pred berbu", "7 dana")]
     },
 
     "Paprika": {
-
-        "Maj": [
-            ("Kalcijum + bor", "Cvetanje i zametanje ploda.", "0 dana")
-        ],
-
-        "Jun": [
-            ("Sumpor", "Pepelnica kontrola.", "5 dana")
-        ],
-
-        "Jul": [
-            ("Biostimulator", "Stres zaštita.", "0 dana")
-        ],
-
-        "Avgust": [
-            ("Blagi fungicid", "Održavanje zdravlja biljke.", "3–5 dana")
-        ]
+        "Maj": [("Kalcijum + bor", "Cvetanje", "0 dana")],
+        "Jun": [("Sumpor", "Pepelnica", "5 dana")],
+        "Jul": [("Biostimulator", "Stres", "0 dana")],
+        "Avgust": [("Blagi fungicid", "Održavanje", "3–5 dana")]
     },
 
     "Krastavac": {
-
-        "Maj": [
-            ("Sumpor", "Preventiva pepelnice.", "5 dana")
-        ],
-
-        "Jun": [
-            ("Biološki fungicid", "Organska zaštita.", "0 dana")
-        ],
-
-        "Jul": [
-            ("Sistemična zaštita", "Jača infekcioni pritisak.", "7–10 dana")
-        ],
-
-        "Avgust": [
-            ("Kratka karenca preparat", "Završna zaštita.", "3–5 dana")
-        ]
+        "Maj": [("Sumpor", "Pepelnica", "5 dana")],
+        "Jun": [("Biološki fungicid", "Organski", "0 dana")],
+        "Jul": [("Sistemična zaštita", "Infekcije", "7–10 dana")],
+        "Avgust": [("Završna zaštita", "Pred berbu", "3–5 dana")]
     }
 }
+
+# =========================
+# AI PRETRAGA PREPARATA
+# =========================
+def ai_pretraga_preparata(termin):
+
+    try:
+        query = urllib.parse.quote(termin + " biostimulator Srbija poljoprivreda")
+
+        url = f"https://duckduckgo.com/html/?q={query}"
+        r = requests.get(url, timeout=5)
+
+        soup = BeautifulSoup(r.text, "html.parser")
+
+        results = []
+
+        for a in soup.find_all("a"):
+
+            text = a.get_text()
+
+            if any(x in text.lower() for x in ["megafol", "algex", "atonik", "fertil", "biostim"]):
+                results.append(text)
+
+            if len(results) >= 5:
+                break
+
+        if results:
+            return results
+
+        return [
+            "Megafol (Valagro)",
+            "Algex",
+            "Atonik",
+            "Sprintene",
+            "Fertileader"
+        ]
+
+    except:
+
+        return [
+            "Megafol (Valagro)",
+            "Algex",
+            "Atonik",
+            "Sprintene"
+        ]
 
 # =========================
 # UI
 # =========================
 
-st.title("🌾 AgroAsistent V3.3.4")
+st.title("🌾 AgroAsistent V3.4")
 
 tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
     "🚨 Danas",
@@ -236,11 +253,11 @@ with tab2:
 with tab3:
 
     kultura = st.selectbox("Kultura", ["Paradajz", "Paprika", "Krastavac"])
-    mesec = st.selectbox("Mesec", ["Maj", "Jun", "Jul", "Avgust"])
+    mesec = st.selectbox("Mesec", list(povrce.keys()))
 
     st.info(povrce[mesec])
 
-    st.subheader("🧪 Preparati po fazi")
+    st.subheader("🧪 Preparati")
 
     if kultura in preparati and mesec in preparati[kultura]:
 
@@ -254,6 +271,14 @@ with tab3:
 
                     log_action(kultura, naziv)
                     st.success("Zabeleženo")
+
+                    # 🤖 AI DODATAK
+                    if naziv in ["Biostimulator", "Sistemična zaštita", "Kalcijum"]:
+
+                        st.subheader("🤖 AI preporuka")
+
+                        for p in ai_pretraga_preparata(naziv):
+                            st.write("• " + p)
 
             with col2:
 
@@ -287,8 +312,7 @@ with tab4:
 with tab5:
 
     st.header("📊 Karenca")
-
-    st.info("Evidencija preko čekiranih preparata")
+    st.info("Prati se kroz dnevnik")
 
 # =========================
 # TAB 6
@@ -300,5 +324,6 @@ with tab6:
 
     if not st.session_state.log:
         st.info("Nema unosa")
+
     else:
         st.dataframe(pd.DataFrame(st.session_state.log))
